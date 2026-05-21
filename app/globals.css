@@ -1,0 +1,260 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #fafaf8;
+  --ink: #111;
+  --ink-muted: #666;
+  --ink-faded: #999;
+  --accent: #c4a559;
+  --border: #e8e8e3;
+  --row-hover: rgba(0, 0, 0, 0.025);
+
+  --font-serif: var(--font-fraunces), serif;
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-fraunces);
+}
+
+html,
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+/* ============== CARGO-ARCHIEF UTILITIES ============== */
+
+.cargo-mono {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: #666;
+}
+
+.cargo-meta {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #555;
+}
+
+.cargo-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #c8c8c0;
+  padding: 8px 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: #111;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.cargo-input:focus {
+  border-bottom-color: #111;
+}
+
+.cargo-input::placeholder {
+  color: #aaa;
+}
+
+textarea.cargo-input {
+  border: 1px solid #c8c8c0;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+textarea.cargo-input:focus {
+  border-color: #111;
+}
+
+.cargo-btn,
+.cargo-btn-primary {
+  display: inline-block;
+  padding: 12px 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid #111;
+}
+
+.cargo-btn {
+  background: transparent;
+  color: #111;
+}
+
+.cargo-btn:hover {
+  background: #111;
+  color: #fafaf8;
+}
+
+.cargo-btn-primary {
+  background: #111;
+  color: #fafaf8;
+}
+
+.cargo-btn-primary:hover {
+  background: #fafaf8;
+  color: #111;
+}
+
+.cargo-back {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #777;
+  transition: color 0.15s;
+}
+
+.cargo-back:hover {
+  color: #111;
+}
+
+.vv-tag-chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 6px 12px;
+  border: 1px solid #c8c8c0;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vv-tag-chip:hover {
+  border-color: #111;
+  color: #111;
+}
+
+.vv-folder {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  padding-top: 14px;
+}
+
+.vv-folder:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.vv-folder-tab {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 84px;
+  height: 16px;
+  background: #f0eee5;
+  border: 1px solid #d8d8d0;
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+}
+
+.vv-folder-body {
+  position: relative;
+  background: #f4f2ea;
+  border: 1px solid #d8d8d0;
+  padding: 22px 22px 20px;
+  transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+}
+
+.vv-folder:not(:disabled):hover .vv-folder-body {
+  transform: translateY(-3px);
+  background: #f7f5ee;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+}
+
+.vv-folder:not(:disabled):hover .vv-folder-tab {
+  background: #f7f5ee;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out both;
+}
+
+select.cargo-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23999' fill='none' stroke-width='1'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  padding-right: 20px;
+}
+
+.vv-page {
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+@media (min-width: 1024px) {
+  .vv-page {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+
+.vv-row {
+  transition: background-color 0.15s;
+  cursor: pointer;
+}
+
+.vv-row:hover {
+  background-color: rgba(0, 0, 0, 0.025);
+}
+
+.vv-grid-book-detail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 64px;
+}
+
+@media (min-width: 1024px) {
+  .vv-grid-book-detail {
+    grid-template-columns: 280px 1fr;
+  }
+}
+
+.vv-grid-question-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 24px;
+  align-items: baseline;
+}
+
+.vv-grid-question-body {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 24px;
+}
+
+.vv-grid-passage {
+  display: grid;
+  grid-template-columns: 1fr 80px;
+  gap: 16px;
+}

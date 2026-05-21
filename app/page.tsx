@@ -1,0 +1,490 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Inbox } from "lucide-react";
+import type {
+  AppState,
+  Book,
+  Question,
+  User,
+  VademecumCategory,
+  VademecumEntry,
+  View,
+} from "@/lib/types";
+import { VERTICAL_RHYTHM } from "@/lib/constants";
+import {
+  INITIAL_BOOKS,
+  INITIAL_QUESTIONS,
+  INITIAL_USERS,
+  INITIAL_VADEMECUM,
+} from "@/lib/demo-data";
+import { getOpenQuestionsByHelpers, makeNotifications } from "@/lib/helpers";
+
+import { ViceVersa } from "@/components/brand/ViceVersa";
+import { AuthScreen } from "@/components/auth/AuthScreen";
+import { BookCover } from "@/components/library/BookCover";
+import { CatalogueLabel } from "@/components/library/CatalogueLabel";
+import { BookView } from "@/components/library/BookView";
+import { ReciprocitySection } from "@/components/library/ReciprocitySection";
+import { ArchiveView } from "@/components/repertorium/ArchiveView";
+import { CategoryView } from "@/components/repertorium/CategoryView";
+import { VademecumView } from "@/components/vademecum/VademecumView";
+import { VademecumCategoryView } from "@/components/vademecum/VademecumCategoryView";
+import {
+  AskQuestionModal,
+  type QuestionDraft,
+} from "@/components/modals/AskQuestionModal";
+import { AddBookModal, type BookDraft } from "@/components/modals/AddBookModal";
+import {
+  AddVademecumModal,
+  type VademecumDraft,
+} from "@/components/modals/AddVademecumModal";
+import { ProfileModal } from "@/components/modals/ProfileModal";
+import { InboxModal } from "@/components/modals/InboxModal";
+import {
+  EmailPreviewModal,
+  type EmailPreviewInfo,
+} from "@/components/modals/EmailPreviewModal";
+
+type FilterDir = "all" | "NL-FR" | "FR-NL";
+
+export default function HomePage() {
+  const [state, setState] = useState<AppState>({
+    users: INITIAL_USERS,
+    books: INITIAL_BOOKS,
+    questions: INITIAL_QUESTIONS,
+    vademecum: INITIAL_VADEMECUM,
+  });
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [view, setView] = useState<View>({ page: "home" });
+  const [showAskModal, setShowAskModal] = useState(false);
+  const [showAddBookModal, setShowAddBookModal] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
+  const [showEmailPreview, setShowEmailPreview] = useState<EmailPreviewInfo | null>(null);
+  const [showAddVademecum, setShowAddVademecum] = useState<VademecumCategory | null>(null);
+  const [filterDir, setFilterDir] = useState<FilterDir>("all");
+
+  const currentUser = useMemo(
+    () => state.users.find((u) => u.id === currentUserId),
+    [state.users, currentUserId]
+  );
+  const notifications = useMemo(
+    () =>
+      currentUser
+        ? makeNotifications(state).filter((n) => n.userId === currentUser.id)
+        : [],
+    [state, currentUser]
+  );
+  const openByHelpers = useMemo(
+    () => (currentUser ? getOpenQuestionsByHelpers(state, currentUser.id) : []),
+    [state, currentUser]
+  );
+
+  const handleLogin = (id: string) => setCurrentUserId(id);
+  const handleLogout = () => {
+    setCurrentUserId(null);
+    setView({ page: "home" });
+  };
+  const handleCreateUser = (u: User) => {
+    setState((s) => ({ ...s, users: [...s.users, u] }));
+    setCurrentUserId(u.id);
+  };
+
+  const addQuestion = (draft: QuestionDraft & { bookId: string; askerId: string }) => {
+    const newQ: Question = {
+      ...draft,
+      id: "q" + Date.now(),
+      answers: [],
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    setState((s) => ({ ...s, questions: [newQ, ...s.questions] }));
+    const book = state.books.find((b) => b.id === draft.bookId);
+    if (!book) return;
+    const targets = state.users.filter(
+      (u) => u.nativeLanguage === book.sourceLanguage && u.id !== draft.askerId
+    );
+    setShowEmailPreview({ question: newQ, book, targets });
+  };
+
+  const addAnswer = (questionId: string, text: string) => {
+    if (!currentUserId) return;
+    const newAnswer = {
+      id: "a" + Date.now(),
+      authorId: currentUserId,
+      text,
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    setState((s) => ({
+      ...s,
+      questions: s.questions.map((q) =>
+        q.id === questionId ? { ...q, answers: [...q.answers, newAnswer] } : q
+      ),
+    }));
+  };
+
+  const addBook = (draft: BookDraft) => {
+    if (!currentUserId) return;
+    const codes = state.books.map((b) => b.code);
+    let n = 1;
+    while (codes.includes(`${draft.sourceLanguage} · ${String(n).padStart(3, "0")}`)) n++;
+    const newBook: Book = {
+      ...draft,
+      id: "b" + Date.now(),
+      translator: currentUserId,
+      code: `${draft.sourceLanguage} · ${String(n).padStart(3, "0")}`,
+    };
+    setState((s) => ({ ...s, books: [...s.books, newBook] }));
+  };
+
+  const addVademecumEntry = (entry: VademecumDraft) => {
+    if (!currentUserId) return;
+    const newE: VademecumEntry = {
+      ...entry,
+      id: "v" + Date.now(),
+      addedBy: currentUserId,
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    setState((s) => ({ ...s, vademecum: [newE, ...s.vademecum] }));
+  };
+
+  if (!currentUser) {
+    return (
+      <AuthScreen
+        users={state.users}
+        onLogin={handleLogin}
+        onCreateUser={handleCreateUser}
+      />
+    );
+  }
+
+  const filteredBooks = state.books.filter((b) => {
+    if (filterDir === "all") return true;
+    if (filterDir === "NL-FR") return b.sourceLanguage === "NL";
+    if (filterDir === "FR-NL") return b.sourceLanguage === "FR";
+    return true;
+  });
+  const selectedBook =
+    view.page === "book" ? state.books.find((b) => b.id === view.bookId) ?? null : null;
+  const bookQuestions =
+    view.page === "book"
+      ? state.questions.filter((q) => q.bookId === view.bookId)
+      : [];
+
+  const navColor = (active: boolean) => (active ? "#111" : "#999");
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#fafaf8",
+        color: "#111",
+        fontFamily: "var(--font-sans)",
+      }}
+    >
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 30,
+          backgroundColor: "#fafaf8",
+          borderBottom: "1px solid #e8e8e3",
+        }}
+      >
+        <div className="vv-page py-4 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <button
+              onClick={() => setView({ page: "home" })}
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: 16,
+                letterSpacing: "-0.01em",
+                color: "#111",
+                fontWeight: 400,
+              }}
+            >
+              <ViceVersa />
+            </button>
+            <nav className="flex items-center gap-5">
+              <button
+                onClick={() => setView({ page: "home" })}
+                className="cargo-mono transition-colors"
+                style={{
+                  color: navColor(view.page === "home" || view.page === "book"),
+                }}
+              >
+                Bibliotheek
+              </button>
+              <button
+                onClick={() => setView({ page: "archive" })}
+                className="cargo-mono transition-colors"
+                style={{
+                  color: navColor(view.page === "archive" || view.page === "category"),
+                }}
+              >
+                Repertorium
+              </button>
+              <button
+                onClick={() => setView({ page: "vademecum" })}
+                className="cargo-mono transition-colors"
+                style={{
+                  color: navColor(
+                    view.page === "vademecum" || view.page === "vademecum-category"
+                  ),
+                }}
+              >
+                Vademecum
+              </button>
+            </nav>
+          </div>
+          <div className="flex items-center gap-6">
+            <button
+              onClick={() => setShowInbox(true)}
+              className="cargo-mono flex items-center gap-1.5 hover:text-black transition-colors"
+              style={{ color: notifications.length > 0 ? "#111" : "#999" }}
+            >
+              <Inbox className="w-3 h-3" strokeWidth={1.5} />{" "}
+              {notifications.length > 0 ? `Inbox (${notifications.length})` : "Inbox"}
+            </button>
+            <button
+              onClick={() => setShowProfile(true)}
+              className="cargo-mono hover:text-black transition-colors"
+              style={{ color: "#666" }}
+            >
+              {currentUser.name}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="cargo-mono hover:text-black transition-colors"
+              style={{ color: "#999" }}
+            >
+              Uitloggen
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="vv-page">
+        {view.page === "home" && (
+          <>
+            <section className="pt-20 pb-16 animate-fadeIn">
+              <div className="cargo-mono mb-3" style={{ color: "#999" }}>
+                Index № 1 — Bibliotheek · Boeken
+              </div>
+              <h1
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "clamp(36px, 5vw, 64px)",
+                  fontWeight: 300,
+                  lineHeight: 0.98,
+                  letterSpacing: "-0.025em",
+                  maxWidth: 900,
+                }}
+              >
+                Vertaalvragen per boek.
+              </h1>
+            </section>
+
+            {openByHelpers.length > 0 && (
+              <ReciprocitySection
+                questions={openByHelpers}
+                state={state}
+                onOpen={(bookId) => setView({ page: "book", bookId })}
+              />
+            )}
+
+            <div
+              className="flex flex-wrap items-center gap-x-5 gap-y-2 py-6 border-t border-b"
+              style={{ borderColor: "#e8e8e3" }}
+            >
+              <div className="cargo-mono" style={{ color: "#999" }}>
+                Bibliotheek:
+              </div>
+              <button
+                onClick={() => setFilterDir("all")}
+                className={`cargo-mono transition-colors ${
+                  filterDir === "all" ? "text-black" : "text-gray-400 hover:text-black"
+                }`}
+              >
+                Alle ({state.books.length})
+              </button>
+              <button
+                onClick={() => setFilterDir("NL-FR")}
+                className={`cargo-mono transition-colors ${
+                  filterDir === "NL-FR" ? "text-black" : "text-gray-400 hover:text-black"
+                }`}
+              >
+                NL→FR ({state.books.filter((b) => b.sourceLanguage === "NL").length})
+              </button>
+              <button
+                onClick={() => setFilterDir("FR-NL")}
+                className={`cargo-mono transition-colors ${
+                  filterDir === "FR-NL" ? "text-black" : "text-gray-400 hover:text-black"
+                }`}
+              >
+                FR→NL ({state.books.filter((b) => b.sourceLanguage === "FR").length})
+              </button>
+              <div className="flex-1" />
+              <button
+                onClick={() => setShowAddBookModal(true)}
+                className="cargo-mono flex items-center gap-1.5 hover:text-black transition-colors"
+                style={{ color: "#666" }}
+              >
+                + Boek toevoegen
+              </button>
+            </div>
+
+            <section className="py-24">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-32">
+                {filteredBooks.map((book, idx) => {
+                  const questionsCount = state.questions.filter(
+                    (q) => q.bookId === book.id
+                  ).length;
+                  const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
+                  return (
+                    <button
+                      key={book.id}
+                      onClick={() => setView({ page: "book", bookId: book.id })}
+                      className="flex flex-col items-start text-left group animate-fadeIn"
+                      style={{
+                        marginTop: offset,
+                        animationDelay: `${idx * 40}ms`,
+                      }}
+                    >
+                      <div className="transition-transform duration-300 group-hover:scale-105">
+                        <BookCover book={book} w={140} h={210} />
+                      </div>
+                      <div className="mt-3">
+                        <CatalogueLabel book={book} questionsCount={questionsCount} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <footer
+              className="border-t py-12 mt-20"
+              style={{ borderColor: "#e8e8e3" }}
+            >
+              <div className="cargo-mono" style={{ color: "#999" }}>
+                <ViceVersa /> — Een hulplijn voor vertalers
+              </div>
+            </footer>
+          </>
+        )}
+
+        {view.page === "book" && selectedBook && (
+          <BookView
+            book={selectedBook}
+            questions={bookQuestions}
+            users={state.users}
+            currentUserId={currentUserId!}
+            focusQuestionId={view.focusQuestion}
+            onBack={() => setView(view.origin || { page: "home" })}
+            onAsk={() => setShowAskModal(true)}
+            onAnswer={addAnswer}
+          />
+        )}
+
+        {view.page === "archive" && (
+          <ArchiveView
+            questions={state.questions}
+            onOpenCategory={(tag) => setView({ page: "category", tag })}
+          />
+        )}
+
+        {view.page === "category" && (
+          <CategoryView
+            tag={view.tag}
+            state={state}
+            onBack={() => setView({ page: "archive" })}
+            onOpenQuestion={(q: Question) =>
+              setView({
+                page: "book",
+                bookId: q.bookId,
+                focusQuestion: q.id,
+                origin: { page: "category", tag: view.tag },
+              })
+            }
+          />
+        )}
+
+        {view.page === "vademecum" && (
+          <VademecumView
+            vademecum={state.vademecum}
+            onOpenCategory={(vcat) => setView({ page: "vademecum-category", vcat })}
+          />
+        )}
+
+        {view.page === "vademecum-category" && (
+          <VademecumCategoryView
+            vcat={view.vcat}
+            vademecum={state.vademecum}
+            users={state.users}
+            onBack={() => setView({ page: "vademecum" })}
+            onAdd={() => setShowAddVademecum(view.vcat)}
+          />
+        )}
+      </main>
+
+      {showAskModal && selectedBook && (
+        <AskQuestionModal
+          book={selectedBook}
+          state={state}
+          onClose={() => setShowAskModal(false)}
+          onSubmit={(q) => {
+            addQuestion({ ...q, bookId: selectedBook.id, askerId: currentUserId! });
+            setShowAskModal(false);
+          }}
+        />
+      )}
+      {showAddBookModal && (
+        <AddBookModal
+          onClose={() => setShowAddBookModal(false)}
+          onSubmit={(b) => {
+            addBook(b);
+            setShowAddBookModal(false);
+          }}
+        />
+      )}
+      {showAddVademecum && (
+        <AddVademecumModal
+          category={showAddVademecum}
+          onClose={() => setShowAddVademecum(null)}
+          onSubmit={(e) => {
+            addVademecumEntry(e);
+            setShowAddVademecum(null);
+          }}
+        />
+      )}
+      {showProfile && (
+        <ProfileModal
+          user={currentUser}
+          questions={state.questions}
+          books={state.books}
+          users={state.users}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
+      {showInbox && (
+        <InboxModal
+          user={currentUser}
+          notifications={notifications}
+          state={state}
+          onClose={() => setShowInbox(false)}
+          onOpenQuestion={(bookId) => {
+            setShowInbox(false);
+            setView({ page: "book", bookId });
+          }}
+        />
+      )}
+      {showEmailPreview && (
+        <EmailPreviewModal
+          info={showEmailPreview}
+          onClose={() => setShowEmailPreview(null)}
+        />
+      )}
+    </div>
+  );
+}
