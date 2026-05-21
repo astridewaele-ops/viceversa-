@@ -38,7 +38,7 @@ export function EmailPreviewModal({ info, onClose }: EmailPreviewModalProps) {
             {targets.length > 1 ? "s" : ""}:
           </div>
           <div className="cargo-mono mb-6" style={{ color: "#111" }}>
-            {targets.map((t) => t.email).join(" · ")}
+            {targets.map((t) => t.name).join(" · ")}
           </div>
 
           <div

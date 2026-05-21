@@ -1,27 +1,31 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { Inbox } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import {
+  createProfile,
+  fetchAppState,
+  insertAnswer,
+  insertBook,
+  insertQuestion,
+  insertVademecum,
+  updateEmailNotifications,
+} from "@/lib/supabase/queries";
 import type {
   AppState,
-  Book,
+  Language,
   Question,
-  User,
   VademecumCategory,
-  VademecumEntry,
   View,
 } from "@/lib/types";
 import { VERTICAL_RHYTHM } from "@/lib/constants";
-import {
-  INITIAL_BOOKS,
-  INITIAL_QUESTIONS,
-  INITIAL_USERS,
-  INITIAL_VADEMECUM,
-} from "@/lib/demo-data";
 import { getOpenQuestionsByHelpers, makeNotifications } from "@/lib/helpers";
 
 import { ViceVersa } from "@/components/brand/ViceVersa";
 import { AuthScreen } from "@/components/auth/AuthScreen";
+import { ProfileSetup } from "@/components/auth/ProfileSetup";
 import { BookCover } from "@/components/library/BookCover";
 import { CatalogueLabel } from "@/components/library/CatalogueLabel";
 import { BookView } from "@/components/library/BookView";
@@ -47,15 +51,20 @@ import {
 } from "@/components/modals/EmailPreviewModal";
 
 type FilterDir = "all" | "NL-FR" | "FR-NL";
+type Stage = "loading" | "anon" | "needs-profile" | "ready";
+
+const EMPTY_STATE: AppState = {
+  users: [],
+  books: [],
+  questions: [],
+  vademecum: [],
+};
 
 export default function HomePage() {
-  const [state, setState] = useState<AppState>({
-    users: INITIAL_USERS,
-    books: INITIAL_BOOKS,
-    questions: INITIAL_QUESTIONS,
-    vademecum: INITIAL_VADEMECUM,
-  });
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [stage, setStage] = useState<Stage>("loading");
+  const [authUser, setAuthUser] = useState<SupabaseAuthUser | null>(null);
+  const [state, setState] = useState<AppState>(EMPTY_STATE);
+
   const [view, setView] = useState<View>({ page: "home" });
   const [showAskModal, setShowAskModal] = useState(false);
   const [showAddBookModal, setShowAddBookModal] = useState(false);
@@ -65,10 +74,56 @@ export default function HomePage() {
   const [showAddVademecum, setShowAddVademecum] = useState<VademecumCategory | null>(null);
   const [filterDir, setFilterDir] = useState<FilterDir>("all");
 
-  const currentUser = useMemo(
-    () => state.users.find((u) => u.id === currentUserId),
-    [state.users, currentUserId]
-  );
+  // Auth-subscription: één keer opzetten bij mount.
+  useEffect(() => {
+    const supabase = createClient();
+    let mounted = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      setAuthUser(data.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setAuthUser(session?.user ?? null);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Data ophalen wanneer er een ingelogde gebruiker is.
+  useEffect(() => {
+    if (!authUser) {
+      setState(EMPTY_STATE);
+      setStage("anon");
+      return;
+    }
+    let cancelled = false;
+    setStage("loading");
+    fetchAppState(authUser.email ?? "").then((newState) => {
+      if (cancelled) return;
+      setState(newState);
+      const myProfile = newState.users.find((u) => u.id === authUser.id);
+      setStage(myProfile ? "ready" : "needs-profile");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser]);
+
+  const currentUser = useMemo(() => {
+    if (!authUser) return null;
+    const profile = state.users.find((u) => u.id === authUser.id);
+    if (!profile) return null;
+    return { ...profile, email: authUser.email ?? "" };
+  }, [authUser, state.users]);
+
   const notifications = useMemo(
     () =>
       currentUser
@@ -81,96 +136,116 @@ export default function HomePage() {
     [state, currentUser]
   );
 
-  const handleLogin = (id: string) => setCurrentUserId(id);
-  const handleLogout = () => {
-    setCurrentUserId(null);
+  // ============== Handlers ==============
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     setView({ page: "home" });
   };
-  const handleCreateUser = (u: User) => {
-    setState((s) => ({ ...s, users: [...s.users, u] }));
-    setCurrentUserId(u.id);
+
+  const handleProfileSetup = async (name: string, nativeLanguage: Language) => {
+    if (!authUser) return;
+    const profile = await createProfile(authUser.id, name, nativeLanguage);
+    if (!profile) {
+      throw new Error("Profiel aanmaken is mislukt. Probeer het opnieuw.");
+    }
+    setState((s) => ({ ...s, users: [...s.users, profile] }));
+    setStage("ready");
   };
 
-  const addQuestion = (draft: QuestionDraft & { bookId: string; askerId: string }) => {
-    const newQ: Question = {
-      ...draft,
-      id: "q" + Date.now(),
-      answers: [],
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
+  const handleAskQuestion = async (draft: QuestionDraft & { bookId: string }) => {
+    if (!currentUser) return;
+    const newQ = await insertQuestion(currentUser.id, draft);
+    if (!newQ) return;
     setState((s) => ({ ...s, questions: [newQ, ...s.questions] }));
     const book = state.books.find((b) => b.id === draft.bookId);
     if (!book) return;
     const targets = state.users.filter(
       (u) =>
         u.nativeLanguage === book.sourceLanguage &&
-        u.id !== draft.askerId &&
+        u.id !== currentUser.id &&
         u.emailNotifications
     );
     setShowEmailPreview({ question: newQ, book, targets });
   };
 
-  const toggleNotifications = () => {
-    if (!currentUserId) return;
-    setState((s) => ({
-      ...s,
-      users: s.users.map((u) =>
-        u.id === currentUserId
-          ? { ...u, emailNotifications: !u.emailNotifications }
-          : u
-      ),
-    }));
-  };
-
-  const addAnswer = (questionId: string, text: string) => {
-    if (!currentUserId) return;
-    const newAnswer = {
-      id: "a" + Date.now(),
-      authorId: currentUserId,
-      text,
-      createdAt: new Date().toISOString().slice(0, 10),
+  const handleAddAnswer = async (questionId: string, text: string) => {
+    if (!currentUser) return;
+    const result = await insertAnswer(currentUser.id, questionId, text);
+    if (!result) return;
+    const answer = {
+      id: result.id,
+      authorId: result.authorId,
+      text: result.text,
+      createdAt: result.createdAt,
     };
     setState((s) => ({
       ...s,
       questions: s.questions.map((q) =>
-        q.id === questionId ? { ...q, answers: [...q.answers, newAnswer] } : q
+        q.id === questionId ? { ...q, answers: [...q.answers, answer] } : q
       ),
     }));
   };
 
-  const addBook = (draft: BookDraft) => {
-    if (!currentUserId) return;
-    const codes = state.books.map((b) => b.code);
-    let n = 1;
-    while (codes.includes(`${draft.sourceLanguage} · ${String(n).padStart(3, "0")}`)) n++;
-    const newBook: Book = {
-      ...draft,
-      id: "b" + Date.now(),
-      translator: currentUserId,
-      code: `${draft.sourceLanguage} · ${String(n).padStart(3, "0")}`,
-    };
+  const handleAddBook = async (draft: BookDraft) => {
+    if (!currentUser) return;
+    const newBook = await insertBook(
+      currentUser.id,
+      draft,
+      state.books.map((b) => b.code)
+    );
+    if (!newBook) return;
     setState((s) => ({ ...s, books: [...s.books, newBook] }));
   };
 
-  const addVademecumEntry = (entry: VademecumDraft) => {
-    if (!currentUserId) return;
-    const newE: VademecumEntry = {
-      ...entry,
-      id: "v" + Date.now(),
-      addedBy: currentUserId,
-      createdAt: new Date().toISOString().slice(0, 10),
-    };
-    setState((s) => ({ ...s, vademecum: [newE, ...s.vademecum] }));
+  const handleAddVademecum = async (entry: VademecumDraft) => {
+    if (!currentUser) return;
+    const newEntry = await insertVademecum(currentUser.id, entry);
+    if (!newEntry) return;
+    setState((s) => ({ ...s, vademecum: [newEntry, ...s.vademecum] }));
   };
 
-  if (!currentUser) {
+  const handleToggleNotifications = async () => {
+    if (!currentUser) return;
+    const newValue = !currentUser.emailNotifications;
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) =>
+        u.id === currentUser.id ? { ...u, emailNotifications: newValue } : u
+      ),
+    }));
+    await updateEmailNotifications(currentUser.id, newValue);
+  };
+
+  // ============== Render ==============
+
+  if (stage === "loading") {
     return (
-      <AuthScreen
-        users={state.users}
-        onLogin={handleLogin}
-        onCreateUser={handleCreateUser}
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: "#fafaf8" }}
+      >
+        <div className="cargo-mono">Laden…</div>
+      </div>
+    );
+  }
+
+  if (stage === "anon") {
+    return <AuthScreen />;
+  }
+
+  if (stage === "needs-profile" && authUser) {
+    return (
+      <ProfileSetup
+        email={authUser.email ?? ""}
+        onSubmit={handleProfileSetup}
       />
     );
+  }
+
+  if (!currentUser) {
+    return <AuthScreen />;
   }
 
   const filteredBooks = state.books.filter((b) => {
@@ -180,7 +255,9 @@ export default function HomePage() {
     return true;
   });
   const selectedBook =
-    view.page === "book" ? state.books.find((b) => b.id === view.bookId) ?? null : null;
+    view.page === "book"
+      ? state.books.find((b) => b.id === view.bookId) ?? null
+      : null;
   const bookQuestions =
     view.page === "book"
       ? state.questions.filter((q) => q.bookId === view.bookId)
@@ -234,7 +311,9 @@ export default function HomePage() {
                 onClick={() => setView({ page: "archive" })}
                 className="cargo-mono transition-colors"
                 style={{
-                  color: navColor(view.page === "archive" || view.page === "category"),
+                  color: navColor(
+                    view.page === "archive" || view.page === "category"
+                  ),
                 }}
               >
                 Repertorium
@@ -244,7 +323,8 @@ export default function HomePage() {
                 className="cargo-mono transition-colors"
                 style={{
                   color: navColor(
-                    view.page === "vademecum" || view.page === "vademecum-category"
+                    view.page === "vademecum" ||
+                      view.page === "vademecum-category"
                   ),
                 }}
               >
@@ -259,7 +339,9 @@ export default function HomePage() {
               style={{ color: notifications.length > 0 ? "#111" : "#999" }}
             >
               <Inbox className="w-3 h-3" strokeWidth={1.5} />{" "}
-              {notifications.length > 0 ? `Inbox (${notifications.length})` : "Inbox"}
+              {notifications.length > 0
+                ? `Inbox (${notifications.length})`
+                : "Inbox"}
             </button>
             <button
               onClick={() => setShowProfile(true)}
@@ -318,7 +400,9 @@ export default function HomePage() {
               <button
                 onClick={() => setFilterDir("all")}
                 className={`cargo-mono transition-colors ${
-                  filterDir === "all" ? "text-black" : "text-gray-400 hover:text-black"
+                  filterDir === "all"
+                    ? "text-black"
+                    : "text-gray-400 hover:text-black"
                 }`}
               >
                 Alle ({state.books.length})
@@ -326,7 +410,9 @@ export default function HomePage() {
               <button
                 onClick={() => setFilterDir("NL-FR")}
                 className={`cargo-mono transition-colors ${
-                  filterDir === "NL-FR" ? "text-black" : "text-gray-400 hover:text-black"
+                  filterDir === "NL-FR"
+                    ? "text-black"
+                    : "text-gray-400 hover:text-black"
                 }`}
               >
                 NL→FR ({state.books.filter((b) => b.sourceLanguage === "NL").length})
@@ -334,7 +420,9 @@ export default function HomePage() {
               <button
                 onClick={() => setFilterDir("FR-NL")}
                 className={`cargo-mono transition-colors ${
-                  filterDir === "FR-NL" ? "text-black" : "text-gray-400 hover:text-black"
+                  filterDir === "FR-NL"
+                    ? "text-black"
+                    : "text-gray-400 hover:text-black"
                 }`}
               >
                 FR→NL ({state.books.filter((b) => b.sourceLanguage === "FR").length})
@@ -349,34 +437,54 @@ export default function HomePage() {
               </button>
             </div>
 
-            <section className="py-24">
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-32">
-                {filteredBooks.map((book, idx) => {
-                  const questionsCount = state.questions.filter(
-                    (q) => q.bookId === book.id
-                  ).length;
-                  const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
-                  return (
-                    <button
-                      key={book.id}
-                      onClick={() => setView({ page: "book", bookId: book.id })}
-                      className="flex flex-col items-start text-left group animate-fadeIn"
-                      style={{
-                        marginTop: offset,
-                        animationDelay: `${idx * 40}ms`,
-                      }}
-                    >
-                      <div className="transition-transform duration-300 group-hover:scale-105">
-                        <BookCover book={book} w={140} h={210} />
-                      </div>
-                      <div className="mt-3">
-                        <CatalogueLabel book={book} questionsCount={questionsCount} />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+            {state.books.length === 0 ? (
+              <section className="py-24">
+                <p
+                  style={{
+                    fontFamily: "var(--font-serif)",
+                    fontSize: 18,
+                    fontStyle: "italic",
+                    color: "#666",
+                    maxWidth: 600,
+                  }}
+                >
+                  Nog geen boeken in de bibliotheek. Klik rechts op &quot;+ Boek
+                  toevoegen&quot; om het eerste boek aan te maken.
+                </p>
+              </section>
+            ) : (
+              <section className="py-24">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-32">
+                  {filteredBooks.map((book, idx) => {
+                    const questionsCount = state.questions.filter(
+                      (q) => q.bookId === book.id
+                    ).length;
+                    const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
+                    return (
+                      <button
+                        key={book.id}
+                        onClick={() => setView({ page: "book", bookId: book.id })}
+                        className="flex flex-col items-start text-left group animate-fadeIn"
+                        style={{
+                          marginTop: offset,
+                          animationDelay: `${idx * 40}ms`,
+                        }}
+                      >
+                        <div className="transition-transform duration-300 group-hover:scale-105">
+                          <BookCover book={book} w={140} h={210} />
+                        </div>
+                        <div className="mt-3">
+                          <CatalogueLabel
+                            book={book}
+                            questionsCount={questionsCount}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
             <footer
               className="border-t py-12 mt-20"
@@ -394,11 +502,11 @@ export default function HomePage() {
             book={selectedBook}
             questions={bookQuestions}
             users={state.users}
-            currentUserId={currentUserId!}
+            currentUserId={currentUser.id}
             focusQuestionId={view.focusQuestion}
             onBack={() => setView(view.origin || { page: "home" })}
             onAsk={() => setShowAskModal(true)}
-            onAnswer={addAnswer}
+            onAnswer={handleAddAnswer}
           />
         )}
 
@@ -449,7 +557,7 @@ export default function HomePage() {
           state={state}
           onClose={() => setShowAskModal(false)}
           onSubmit={(q) => {
-            addQuestion({ ...q, bookId: selectedBook.id, askerId: currentUserId! });
+            handleAskQuestion({ ...q, bookId: selectedBook.id });
             setShowAskModal(false);
           }}
         />
@@ -458,7 +566,7 @@ export default function HomePage() {
         <AddBookModal
           onClose={() => setShowAddBookModal(false)}
           onSubmit={(b) => {
-            addBook(b);
+            handleAddBook(b);
             setShowAddBookModal(false);
           }}
         />
@@ -468,7 +576,7 @@ export default function HomePage() {
           category={showAddVademecum}
           onClose={() => setShowAddVademecum(null)}
           onSubmit={(e) => {
-            addVademecumEntry(e);
+            handleAddVademecum(e);
             setShowAddVademecum(null);
           }}
         />
@@ -480,7 +588,7 @@ export default function HomePage() {
           books={state.books}
           users={state.users}
           onClose={() => setShowProfile(false)}
-          onToggleNotifications={toggleNotifications}
+          onToggleNotifications={handleToggleNotifications}
         />
       )}
       {showInbox && (

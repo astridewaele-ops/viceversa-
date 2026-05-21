@@ -1,0 +1,357 @@
+import type {
+  AppState,
+  Book,
+  CoverPattern,
+  Language,
+  Question,
+  User,
+  VademecumCategory,
+  VademecumEntry,
+} from "@/lib/types";
+import { createClient } from "./client";
+
+// ============== DB-row-vormen (snake_case) ==============
+
+interface DbProfile {
+  id: string;
+  name: string;
+  native_language: Language;
+  translates_to: Language;
+  bio: string | null;
+  joined_at: string;
+  email_notifications: boolean;
+}
+
+interface DbBook {
+  id: string;
+  code: string;
+  title: string;
+  author: string;
+  year: number | null;
+  source_language: Language;
+  target_language: Language;
+  translator_id: string | null;
+  cover_bg: string | null;
+  cover_accent: string | null;
+  cover_pattern: string | null;
+  created_at: string;
+}
+
+interface DbAnswer {
+  id: string;
+  question_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+}
+
+interface DbQuestion {
+  id: string;
+  book_id: string;
+  asker_id: string;
+  title: string;
+  passage: string | null;
+  page: string | null;
+  body: string;
+  tags: string[];
+  created_at: string;
+  answers?: DbAnswer[];
+}
+
+interface DbVademecum {
+  id: string;
+  category: VademecumCategory;
+  name: string;
+  for_whom: string | null;
+  deadline: string | null;
+  link: string | null;
+  added_by: string | null;
+  created_at: string;
+}
+
+// ============== Mappers DB → TS ==============
+
+function mapProfile(p: DbProfile, email = ""): User {
+  return {
+    id: p.id,
+    name: p.name,
+    email,
+    nativeLanguage: p.native_language,
+    translates: [p.translates_to],
+    verified: true,
+    joined: p.joined_at.slice(0, 10),
+    bio: p.bio ?? "",
+    emailNotifications: p.email_notifications,
+  };
+}
+
+function mapBook(b: DbBook): Book {
+  return {
+    id: b.id,
+    code: b.code,
+    title: b.title,
+    author: b.author,
+    year: b.year ?? new Date().getFullYear(),
+    sourceLanguage: b.source_language,
+    targetLanguage: b.target_language,
+    translator: b.translator_id ?? "",
+    coverStyle: {
+      bg: b.cover_bg ?? "#3a2f1f",
+      accent: b.cover_accent ?? "#c4a559",
+      pattern: (b.cover_pattern ?? "horizontal") as CoverPattern,
+    },
+  };
+}
+
+function mapQuestion(q: DbQuestion): Question {
+  return {
+    id: q.id,
+    bookId: q.book_id,
+    askerId: q.asker_id,
+    title: q.title,
+    passage: q.passage ?? "",
+    page: q.page ?? "",
+    text: q.body,
+    tags: q.tags,
+    createdAt: q.created_at.slice(0, 10),
+    answers: (q.answers ?? []).map((a) => ({
+      id: a.id,
+      authorId: a.author_id,
+      text: a.body,
+      createdAt: a.created_at.slice(0, 10),
+    })),
+  };
+}
+
+function mapVademecum(v: DbVademecum): VademecumEntry {
+  return {
+    id: v.id,
+    category: v.category,
+    name: v.name,
+    forWhom: v.for_whom ?? "",
+    deadline: v.deadline ?? "",
+    link: v.link ?? "",
+    addedBy: v.added_by ?? "",
+    createdAt: v.created_at.slice(0, 10),
+  };
+}
+
+// ============== Fetch ==============
+
+export async function fetchAppState(currentUserEmail: string): Promise<AppState> {
+  const supabase = createClient();
+  const [profilesRes, booksRes, questionsRes, vademecumRes] = await Promise.all([
+    supabase.from("profiles").select("*"),
+    supabase.from("books").select("*").order("created_at", { ascending: true }),
+    supabase
+      .from("questions")
+      .select("*, answers(*)")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("vademecum")
+      .select("*")
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const profiles = (profilesRes.data as DbProfile[] | null) ?? [];
+  const books = (booksRes.data as DbBook[] | null) ?? [];
+  const questions = (questionsRes.data as DbQuestion[] | null) ?? [];
+  const vademecum = (vademecumRes.data as DbVademecum[] | null) ?? [];
+
+  return {
+    users: profiles.map((p) => mapProfile(p, "")),
+    books: books.map(mapBook),
+    questions: questions.map(mapQuestion),
+    vademecum: vademecum.map(mapVademecum),
+  };
+}
+
+// ============== Profielbeheer ==============
+
+export async function ensureProfile(
+  userId: string,
+  fallback: { name: string; nativeLanguage: Language }
+): Promise<User | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("fetch profile", error);
+    return null;
+  }
+  if (data) return mapProfile(data as DbProfile);
+  return null;
+}
+
+export async function createProfile(
+  userId: string,
+  name: string,
+  nativeLanguage: Language
+): Promise<User | null> {
+  const supabase = createClient();
+  const translatesTo: Language = nativeLanguage === "NL" ? "FR" : "NL";
+  const { data, error } = await supabase
+    .from("profiles")
+    .insert({
+      id: userId,
+      name,
+      native_language: nativeLanguage,
+      translates_to: translatesTo,
+    })
+    .select()
+    .single();
+  if (error) {
+    console.error("create profile", error);
+    return null;
+  }
+  return mapProfile(data as DbProfile);
+}
+
+export async function updateEmailNotifications(
+  userId: string,
+  enabled: boolean
+): Promise<void> {
+  const supabase = createClient();
+  await supabase
+    .from("profiles")
+    .update({ email_notifications: enabled })
+    .eq("id", userId);
+}
+
+// ============== Mutaties — vraag, antwoord, boek, vademecum ==============
+
+export interface QuestionInput {
+  bookId: string;
+  title: string;
+  passage: string;
+  page: string;
+  text: string;
+  tags: string[];
+}
+
+export async function insertQuestion(
+  askerId: string,
+  q: QuestionInput
+): Promise<Question | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("questions")
+    .insert({
+      book_id: q.bookId,
+      asker_id: askerId,
+      title: q.title,
+      passage: q.passage,
+      page: q.page,
+      body: q.text,
+      tags: q.tags,
+    })
+    .select("*, answers(*)")
+    .single();
+  if (error) {
+    console.error("insert question", error);
+    return null;
+  }
+  return mapQuestion(data as DbQuestion);
+}
+
+export async function insertAnswer(
+  authorId: string,
+  questionId: string,
+  text: string
+): Promise<{ id: string; questionId: string; authorId: string; text: string; createdAt: string } | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("answers")
+    .insert({ question_id: questionId, author_id: authorId, body: text })
+    .select()
+    .single();
+  if (error) {
+    console.error("insert answer", error);
+    return null;
+  }
+  const a = data as DbAnswer;
+  return {
+    id: a.id,
+    questionId: a.question_id,
+    authorId: a.author_id,
+    text: a.body,
+    createdAt: a.created_at.slice(0, 10),
+  };
+}
+
+export interface BookInput {
+  title: string;
+  author: string;
+  year: number;
+  sourceLanguage: Language;
+  targetLanguage: Language;
+  coverStyle: { bg: string; accent: string; pattern: CoverPattern };
+}
+
+export async function insertBook(
+  translatorId: string,
+  b: BookInput,
+  existingCodes: string[]
+): Promise<Book | null> {
+  let n = 1;
+  while (existingCodes.includes(`${b.sourceLanguage} · ${String(n).padStart(3, "0")}`)) n++;
+  const code = `${b.sourceLanguage} · ${String(n).padStart(3, "0")}`;
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("books")
+    .insert({
+      code,
+      title: b.title,
+      author: b.author,
+      year: b.year,
+      source_language: b.sourceLanguage,
+      target_language: b.targetLanguage,
+      translator_id: translatorId,
+      cover_bg: b.coverStyle.bg,
+      cover_accent: b.coverStyle.accent,
+      cover_pattern: b.coverStyle.pattern,
+    })
+    .select()
+    .single();
+  if (error) {
+    console.error("insert book", error);
+    return null;
+  }
+  return mapBook(data as DbBook);
+}
+
+export interface VademecumInput {
+  category: VademecumCategory;
+  name: string;
+  forWhom: string;
+  deadline: string;
+  link: string;
+}
+
+export async function insertVademecum(
+  addedBy: string,
+  v: VademecumInput
+): Promise<VademecumEntry | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("vademecum")
+    .insert({
+      category: v.category,
+      name: v.name,
+      for_whom: v.forWhom,
+      deadline: v.deadline,
+      link: v.link,
+      added_by: addedBy,
+    })
+    .select()
+    .single();
+  if (error) {
+    console.error("insert vademecum", error);
+    return null;
+  }
+  return mapVademecum(data as DbVademecum);
+}
