@@ -1,12 +1,12 @@
 import type { Book, Question, User, VademecumEntry } from "./types";
 
 export const INITIAL_USERS: User[] = [
-  { id: "u1", name: "Astrid Dewaele",  email: "astrid@example.be", nativeLanguage: "NL", translates: ["FR"], verified: true, joined: "2024-09-12", bio: "Literair vertaler Frans–Nederlands." },
-  { id: "u2", name: "Pierre Dubois",   email: "pierre@example.fr", nativeLanguage: "FR", translates: ["NL"], verified: true, joined: "2024-06-04", bio: "Traducteur littéraire. Néerlandais → français." },
-  { id: "u3", name: "Bram De Vos",     email: "bram@example.be",   nativeLanguage: "NL", translates: ["FR"], verified: true, joined: "2024-11-21", bio: "Vlaamse vertaler. Hertmans, Claus." },
-  { id: "u4", name: "Anne Leclerc",    email: "anne@example.fr",   nativeLanguage: "FR", translates: ["NL"], verified: true, joined: "2025-01-09", bio: "Spécialiste Mulisch et Nooteboom." },
-  { id: "u5", name: "Lotte Janssen",   email: "lotte@example.nl",  nativeLanguage: "NL", translates: ["FR"], verified: true, joined: "2024-12-02", bio: "Vertaalt hedendaagse Franse romans." },
-  { id: "u6", name: "Sophie Moreau",   email: "sophie@example.fr", nativeLanguage: "FR", translates: ["NL"], verified: true, joined: "2025-03-15", bio: "Poésie et littérature flamande." },
+  { id: "u1", name: "Astrid Dewaele",  email: "astrid@example.be", nativeLanguage: "NL", translates: ["FR"], verified: true, joined: "2024-09-12", bio: "Literair vertaler Frans–Nederlands.",        emailNotifications: true },
+  { id: "u2", name: "Pierre Dubois",   email: "pierre@example.fr", nativeLanguage: "FR", translates: ["NL"], verified: true, joined: "2024-06-04", bio: "Traducteur littéraire. Néerlandais → français.", emailNotifications: true },
+  { id: "u3", name: "Bram De Vos",     email: "bram@example.be",   nativeLanguage: "NL", translates: ["FR"], verified: true, joined: "2024-11-21", bio: "Vlaamse vertaler. Hertmans, Claus.",          emailNotifications: true },
+  { id: "u4", name: "Anne Leclerc",    email: "anne@example.fr",   nativeLanguage: "FR", translates: ["NL"], verified: true, joined: "2025-01-09", bio: "Spécialiste Mulisch et Nooteboom.",           emailNotifications: true },
+  { id: "u5", name: "Lotte Janssen",   email: "lotte@example.nl",  nativeLanguage: "NL", translates: ["FR"], verified: true, joined: "2024-12-02", bio: "Vertaalt hedendaagse Franse romans.",         emailNotifications: true },
+  { id: "u6", name: "Sophie Moreau",   email: "sophie@example.fr", nativeLanguage: "FR", translates: ["NL"], verified: true, joined: "2025-03-15", bio: "Poésie et littérature flamande.",             emailNotifications: true },
 ];
 
 export const INITIAL_BOOKS: Book[] = [

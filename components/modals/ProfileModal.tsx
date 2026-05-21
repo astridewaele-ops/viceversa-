@@ -12,9 +12,15 @@ interface ProfileModalProps {
   books: Book[];
   users: User[];
   onClose: () => void;
+  onToggleNotifications: () => void;
 }
 
-export function ProfileModal({ user, questions, onClose }: ProfileModalProps) {
+export function ProfileModal({
+  user,
+  questions,
+  onClose,
+  onToggleNotifications,
+}: ProfileModalProps) {
   const myQuestions = questions.filter((q) => q.askerId === user.id);
   const myAnswers = questions.flatMap((q) =>
     q.answers
@@ -76,6 +82,36 @@ export function ProfileModal({ user, questions, onClose }: ProfileModalProps) {
           <Stat label="Vragen gesteld" value={myQuestions.length} />
           <Stat label="Antwoorden gegeven" value={myAnswers.length} />
           <Stat label="Mensen geholpen" value={helped.size} />
+        </div>
+
+        <div
+          className="pt-6 border-t flex items-start justify-between gap-6"
+          style={{ borderColor: "#e8e8e3" }}
+        >
+          <div className="flex-1 min-w-0">
+            <div className="cargo-mono" style={{ color: "#777" }}>
+              E-mailmeldingen
+            </div>
+            <p
+              className="mt-1.5"
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: 14,
+                lineHeight: 1.55,
+                color: "#444",
+              }}
+            >
+              {user.emailNotifications
+                ? "Je krijgt bericht bij nieuwe vragen."
+                : "Je krijgt geen bericht bij nieuwe vragen."}
+            </p>
+          </div>
+          <button
+            onClick={onToggleNotifications}
+            className={user.emailNotifications ? "cargo-btn-primary" : "cargo-btn"}
+          >
+            {user.emailNotifications ? "Aan" : "Uit"}
+          </button>
         </div>
       </div>
     </Modal>

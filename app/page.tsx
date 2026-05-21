@@ -102,9 +102,24 @@ export default function HomePage() {
     const book = state.books.find((b) => b.id === draft.bookId);
     if (!book) return;
     const targets = state.users.filter(
-      (u) => u.nativeLanguage === book.sourceLanguage && u.id !== draft.askerId
+      (u) =>
+        u.nativeLanguage === book.sourceLanguage &&
+        u.id !== draft.askerId &&
+        u.emailNotifications
     );
     setShowEmailPreview({ question: newQ, book, targets });
+  };
+
+  const toggleNotifications = () => {
+    if (!currentUserId) return;
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) =>
+        u.id === currentUserId
+          ? { ...u, emailNotifications: !u.emailNotifications }
+          : u
+      ),
+    }));
   };
 
   const addAnswer = (questionId: string, text: string) => {
@@ -465,6 +480,7 @@ export default function HomePage() {
           books={state.books}
           users={state.users}
           onClose={() => setShowProfile(false)}
+          onToggleNotifications={toggleNotifications}
         />
       )}
       {showInbox && (

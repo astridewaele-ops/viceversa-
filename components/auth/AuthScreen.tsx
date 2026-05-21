@@ -44,6 +44,7 @@ export function AuthScreen({ users, onLogin, onCreateUser }: AuthScreenProps) {
       verified: false,
       joined: new Date().toISOString().slice(0, 10),
       bio: "",
+      emailNotifications: true,
     });
     setMode("verify");
   };
@@ -79,7 +80,7 @@ export function AuthScreen({ users, onLogin, onCreateUser }: AuthScreenProps) {
               appeler un.e ami.e
             </div>
             <h1
-              className="mt-12 mb-16"
+              className="mt-12 mb-10"
               style={{
                 fontFamily: "var(--font-serif)",
                 fontSize: "clamp(56px, 9vw, 120px)",
@@ -102,12 +103,6 @@ export function AuthScreen({ users, onLogin, onCreateUser }: AuthScreenProps) {
             >
               Vragen van en voor vertalers.
             </h2>
-            <div
-              className="mt-10"
-              style={{ maxWidth: 480, fontSize: 14, lineHeight: 1.6, color: "#444" }}
-            >
-              Een hulplijn voor literair vertalers tussen het Frans en het Nederlands.
-            </div>
 
             <div className="mt-12 flex flex-wrap gap-3">
               <button onClick={() => setMode("signup")} className="cargo-btn-primary">
@@ -139,7 +134,7 @@ export function AuthScreen({ users, onLogin, onCreateUser }: AuthScreenProps) {
               ← Terug
             </button>
             <h2
-              className="mt-12 mb-2"
+              className="mt-12 mb-10"
               style={{
                 fontFamily: "var(--font-serif)",
                 fontSize: 40,
@@ -149,7 +144,6 @@ export function AuthScreen({ users, onLogin, onCreateUser }: AuthScreenProps) {
             >
               Meld je aan.
             </h2>
-            <p className="cargo-meta mb-10">Toegang na e-mailbevestiging.</p>
 
             <div className="space-y-7">
               <Field

@@ -6,7 +6,7 @@ export function ViceVersa() {
         style={{
           display: "inline-block",
           transform: "rotate(180deg)",
-          verticalAlign: "-0.22em",
+          verticalAlign: "-0.30em",
         }}
       >
         vice

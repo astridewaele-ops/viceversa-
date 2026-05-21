@@ -7,6 +7,7 @@ export function makeNotifications(state: AppState): Notification[] {
     if (!book) return;
     state.users.forEach((u) => {
       if (u.id === q.askerId) return;
+      if (!u.emailNotifications) return;
       if (u.nativeLanguage === book.sourceLanguage) {
         notifications.push({
           id: `n-${q.id}-${u.id}`,

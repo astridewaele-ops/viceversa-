@@ -32,7 +32,7 @@ export function AskQuestionModal({ book, state, onClose, onSubmit }: AskQuestion
   const toggleTag = (id: string) =>
     setSelectedTags((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]));
   const nativeSpeakers = state.users.filter(
-    (u) => u.nativeLanguage === book.sourceLanguage
+    (u) => u.nativeLanguage === book.sourceLanguage && u.emailNotifications
   );
 
   return (

@@ -24,6 +24,7 @@ export interface User {
   verified: boolean;
   joined: string;
   bio: string;
+  emailNotifications: boolean;
 }
 
 export interface Book {

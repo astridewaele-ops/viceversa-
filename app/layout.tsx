@@ -35,6 +35,7 @@ export default function RootLayout({
     <html
       lang="nl"
       className={`${fraunces.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
+      suppressHydrationWarning
     >
       <body>{children}</body>
     </html>
