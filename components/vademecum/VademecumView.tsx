@@ -14,7 +14,6 @@ export function VademecumView({ vademecum, onOpenCategory }: VademecumViewProps)
     acc[c.id] = vademecum.filter((e) => e.category === c.id).length;
     return acc;
   }, {});
-  const total = vademecum.length;
 
   return (
     <div className="animate-fadeIn">
@@ -78,12 +77,6 @@ export function VademecumView({ vademecum, onOpenCategory }: VademecumViewProps)
         ))}
       </section>
 
-      <footer className="border-t py-12" style={{ borderColor: "#e8e8e3" }}>
-        <div className="cargo-mono" style={{ color: "#999" }}>
-          {total} {total === 1 ? "item" : "items"} in totaal · verdeeld over{" "}
-          {VADEMECUM_CATEGORIES.length} mappen · iedereen kan bijdragen
-        </div>
-      </footer>
     </div>
   );
 }

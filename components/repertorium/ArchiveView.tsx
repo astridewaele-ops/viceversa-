@@ -14,7 +14,6 @@ export function ArchiveView({ questions, onOpenCategory }: ArchiveViewProps) {
     acc[t.id] = questions.filter((q) => q.tags && q.tags.includes(t.id)).length;
     return acc;
   }, {});
-  const total = questions.length;
 
   return (
     <div className="animate-fadeIn">
@@ -80,12 +79,6 @@ export function ArchiveView({ questions, onOpenCategory }: ArchiveViewProps) {
         ))}
       </section>
 
-      <footer className="border-t py-12" style={{ borderColor: "#e8e8e3" }}>
-        <div className="cargo-mono" style={{ color: "#999" }}>
-          {total} vragen in totaal · verdeeld over {TAGS.length} categorieën · een vraag
-          kan in meerdere mappen zitten
-        </div>
-      </footer>
     </div>
   );
 }
