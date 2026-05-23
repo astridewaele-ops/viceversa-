@@ -6,12 +6,16 @@ import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { Inbox } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
+  assignQuestionFolder,
+  assignVademecumFolder,
   createProfile,
   deleteAnswer,
+  deleteFolder,
   deleteQuestion,
   fetchAppState,
   insertAnswer,
   insertBook,
+  insertFolder,
   insertQuestion,
   insertVademecum,
   updateAnswerBody,
@@ -20,6 +24,7 @@ import {
 } from "@/lib/supabase/queries";
 import type {
   AppState,
+  FolderSection,
   Language,
   Question,
   VademecumCategory,
@@ -39,6 +44,7 @@ import { ArchiveView } from "@/components/repertorium/ArchiveView";
 import { CategoryView } from "@/components/repertorium/CategoryView";
 import { VademecumView } from "@/components/vademecum/VademecumView";
 import { VademecumCategoryView } from "@/components/vademecum/VademecumCategoryView";
+import { FolderView } from "@/components/folders/FolderView";
 import {
   AskQuestionModal,
   type QuestionDraft,
@@ -54,6 +60,8 @@ import {
   EmailPreviewModal,
   type EmailPreviewInfo,
 } from "@/components/modals/EmailPreviewModal";
+import { CreateFolderModal } from "@/components/modals/CreateFolderModal";
+import { AddToFolderModal } from "@/components/modals/AddToFolderModal";
 
 type FilterDir = "all" | "NL-FR" | "FR-NL";
 type Stage = "loading" | "anon" | "needs-profile" | "ready";
@@ -63,6 +71,7 @@ const EMPTY_STATE: AppState = {
   books: [],
   questions: [],
   vademecum: [],
+  folders: [],
 };
 
 export default function HomePage() {
@@ -79,6 +88,9 @@ export default function HomePage() {
   const [showEmailPreview, setShowEmailPreview] = useState<EmailPreviewInfo | null>(null);
   const [showAddVademecum, setShowAddVademecum] = useState<VademecumCategory | null>(null);
   const [filterDir, setFilterDir] = useState<FilterDir>("all");
+  const [createFolderSection, setCreateFolderSection] =
+    useState<FolderSection | null>(null);
+  const [addToFolderId, setAddToFolderId] = useState<string | null>(null);
 
   // Auth-subscription: één keer opzetten bij mount.
   useEffect(() => {
@@ -273,6 +285,63 @@ export default function HomePage() {
         q.id !== questionId
           ? q
           : { ...q, answers: q.answers.filter((a) => a.id !== answerId) }
+      ),
+    }));
+  };
+
+  const handleCreateFolder = async (
+    section: FolderSection,
+    name: string
+  ) => {
+    if (!currentUser) return;
+    const folder = await insertFolder(currentUser.id, section, name);
+    if (!folder) throw new Error("Map aanmaken mislukt.");
+    setState((s) => ({ ...s, folders: [...s.folders, folder] }));
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    if (!currentUser) return;
+    const ok = await deleteFolder(folderId);
+    if (!ok) return;
+    setState((s) => ({
+      ...s,
+      folders: s.folders.filter((f) => f.id !== folderId),
+      questions: s.questions.map((q) =>
+        q.folderId === folderId ? { ...q, folderId: null } : q
+      ),
+      vademecum: s.vademecum.map((e) =>
+        e.folderId === folderId ? { ...e, folderId: null } : e
+      ),
+    }));
+    setView({ page: "archive" });
+  };
+
+  const handleAssignQuestionToFolder = async (
+    questionId: string,
+    folderId: string | null
+  ) => {
+    if (!currentUser) return;
+    const ok = await assignQuestionFolder(questionId, folderId);
+    if (!ok) return;
+    setState((s) => ({
+      ...s,
+      questions: s.questions.map((q) =>
+        q.id === questionId ? { ...q, folderId } : q
+      ),
+    }));
+  };
+
+  const handleAssignVademecumToFolder = async (
+    entryId: string,
+    folderId: string | null
+  ) => {
+    if (!currentUser) return;
+    const ok = await assignVademecumFolder(entryId, folderId);
+    if (!ok) return;
+    setState((s) => ({
+      ...s,
+      vademecum: s.vademecum.map((e) =>
+        e.id === entryId ? { ...e, folderId } : e
       ),
     }));
   };
@@ -585,7 +654,12 @@ export default function HomePage() {
         {view.page === "archive" && (
           <ArchiveView
             questions={state.questions}
+            folders={state.folders}
             onOpenCategory={(tag) => setView({ page: "category", tag })}
+            onOpenFolder={(folderId) =>
+              setView({ page: "folder", section: "repertorium", folderId })
+            }
+            onNewFolder={() => setCreateFolderSection("repertorium")}
           />
         )}
 
@@ -608,7 +682,12 @@ export default function HomePage() {
         {view.page === "vademecum" && (
           <VademecumView
             vademecum={state.vademecum}
+            folders={state.folders}
             onOpenCategory={(vcat) => setView({ page: "vademecum-category", vcat })}
+            onOpenFolder={(folderId) =>
+              setView({ page: "folder", section: "vademecum", folderId })
+            }
+            onNewFolder={() => setCreateFolderSection("vademecum")}
           />
         )}
 
@@ -621,6 +700,71 @@ export default function HomePage() {
             onAdd={() => setShowAddVademecum(view.vcat)}
           />
         )}
+
+        {view.page === "folder" && (() => {
+          const folder = state.folders.find((f) => f.id === view.folderId);
+          if (!folder) {
+            return (
+              <div className="py-12">
+                <button
+                  onClick={() =>
+                    setView({
+                      page: view.section === "repertorium" ? "archive" : "vademecum",
+                    })
+                  }
+                  className="cargo-back mb-8"
+                >
+                  ← Terug
+                </button>
+                <p
+                  style={{
+                    fontFamily: "var(--font-serif)",
+                    fontSize: 18,
+                    fontStyle: "italic",
+                    color: "#666",
+                  }}
+                >
+                  Deze map bestaat niet meer.
+                </p>
+              </div>
+            );
+          }
+          return (
+            <FolderView
+              folder={folder}
+              state={state}
+              currentUserId={currentUser.id}
+              onBack={() =>
+                setView({
+                  page: folder.section === "repertorium" ? "archive" : "vademecum",
+                })
+              }
+              onAddItem={() => setAddToFolderId(folder.id)}
+              onRemoveItem={async (itemId) => {
+                if (folder.section === "repertorium") {
+                  await handleAssignQuestionToFolder(itemId, null);
+                } else {
+                  await handleAssignVademecumToFolder(itemId, null);
+                }
+              }}
+              onDeleteFolder={async () => {
+                await handleDeleteFolder(folder.id);
+              }}
+              onOpenQuestion={(q: Question) =>
+                setView({
+                  page: "book",
+                  bookId: q.bookId,
+                  focusQuestion: q.id,
+                  origin: {
+                    page: "folder",
+                    section: "repertorium",
+                    folderId: folder.id,
+                  },
+                })
+              }
+            />
+          );
+        })()}
       </main>
 
       {showAskModal && selectedBook && (
@@ -681,6 +825,46 @@ export default function HomePage() {
           onClose={() => setShowEmailPreview(null)}
         />
       )}
+      {createFolderSection && (
+        <CreateFolderModal
+          sectionLabel={
+            createFolderSection === "repertorium" ? "repertorium" : "vademecum"
+          }
+          onClose={() => setCreateFolderSection(null)}
+          onSubmit={async (name) => {
+            await handleCreateFolder(createFolderSection, name);
+          }}
+        />
+      )}
+      {addToFolderId && (() => {
+        const folder = state.folders.find((f) => f.id === addToFolderId);
+        if (!folder) return null;
+        const availableQuestions =
+          folder.section === "repertorium"
+            ? state.questions.filter((q) => q.folderId !== folder.id)
+            : [];
+        const availableEntries =
+          folder.section === "vademecum"
+            ? state.vademecum.filter((e) => e.folderId !== folder.id)
+            : [];
+        return (
+          <AddToFolderModal
+            folderName={folder.name}
+            kind={folder.section === "repertorium" ? "question" : "vademecum"}
+            questions={availableQuestions}
+            vademecum={availableEntries}
+            books={state.books}
+            onClose={() => setAddToFolderId(null)}
+            onPick={async (itemId) => {
+              if (folder.section === "repertorium") {
+                await handleAssignQuestionToFolder(itemId, folder.id);
+              } else {
+                await handleAssignVademecumToFolder(itemId, folder.id);
+              }
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }

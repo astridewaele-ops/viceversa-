@@ -2,6 +2,8 @@ import type {
   AppState,
   Book,
   CoverPattern,
+  Folder,
+  FolderSection,
   Language,
   Question,
   User,
@@ -55,6 +57,7 @@ interface DbQuestion {
   body: string;
   tags: string[];
   created_at: string;
+  folder_id: string | null;
   answers?: DbAnswer[];
 }
 
@@ -66,6 +69,15 @@ interface DbVademecum {
   deadline: string | null;
   link: string | null;
   added_by: string | null;
+  created_at: string;
+  folder_id: string | null;
+}
+
+interface DbFolder {
+  id: string;
+  section: FolderSection;
+  name: string;
+  user_id: string;
   created_at: string;
 }
 
@@ -114,6 +126,7 @@ function mapQuestion(q: DbQuestion): Question {
     text: q.body,
     tags: q.tags,
     createdAt: q.created_at.slice(0, 10),
+    folderId: q.folder_id ?? null,
     answers: (q.answers ?? []).map((a) => ({
       id: a.id,
       authorId: a.author_id,
@@ -133,6 +146,17 @@ function mapVademecum(v: DbVademecum): VademecumEntry {
     link: v.link ?? "",
     addedBy: v.added_by ?? "",
     createdAt: v.created_at.slice(0, 10),
+    folderId: v.folder_id ?? null,
+  };
+}
+
+function mapFolder(f: DbFolder): Folder {
+  return {
+    id: f.id,
+    section: f.section,
+    name: f.name,
+    userId: f.user_id,
+    createdAt: f.created_at.slice(0, 10),
   };
 }
 
@@ -140,29 +164,36 @@ function mapVademecum(v: DbVademecum): VademecumEntry {
 
 export async function fetchAppState(currentUserEmail: string): Promise<AppState> {
   const supabase = createClient();
-  const [profilesRes, booksRes, questionsRes, vademecumRes] = await Promise.all([
-    supabase.from("profiles").select("*"),
-    supabase.from("books").select("*").order("created_at", { ascending: true }),
-    supabase
-      .from("questions")
-      .select("*, answers(*)")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("vademecum")
-      .select("*")
-      .order("created_at", { ascending: false }),
-  ]);
+  const [profilesRes, booksRes, questionsRes, vademecumRes, foldersRes] =
+    await Promise.all([
+      supabase.from("profiles").select("*"),
+      supabase.from("books").select("*").order("created_at", { ascending: true }),
+      supabase
+        .from("questions")
+        .select("*, answers(*)")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("vademecum")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("folders")
+        .select("*")
+        .order("created_at", { ascending: true }),
+    ]);
 
   const profiles = (profilesRes.data as DbProfile[] | null) ?? [];
   const books = (booksRes.data as DbBook[] | null) ?? [];
   const questions = (questionsRes.data as DbQuestion[] | null) ?? [];
   const vademecum = (vademecumRes.data as DbVademecum[] | null) ?? [];
+  const folders = (foldersRes.data as DbFolder[] | null) ?? [];
 
   return {
     users: profiles.map((p) => mapProfile(p, "")),
     books: books.map(mapBook),
     questions: questions.map(mapQuestion),
     vademecum: vademecum.map(mapVademecum),
+    folders: folders.map(mapFolder),
   };
 }
 
@@ -335,6 +366,68 @@ export async function deleteAnswer(answerId: string): Promise<boolean> {
     .eq("id", answerId);
   if (error) {
     console.error("delete answer", error);
+    return false;
+  }
+  return true;
+}
+
+// ============== Folders ==============
+
+export async function insertFolder(
+  userId: string,
+  section: FolderSection,
+  name: string
+): Promise<Folder | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("folders")
+    .insert({ section, name, user_id: userId })
+    .select()
+    .single();
+  if (error) {
+    console.error("insert folder", error);
+    return null;
+  }
+  return mapFolder(data as DbFolder);
+}
+
+export async function deleteFolder(folderId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("folders").delete().eq("id", folderId);
+  if (error) {
+    console.error("delete folder", error);
+    return false;
+  }
+  return true;
+}
+
+export async function assignQuestionFolder(
+  questionId: string,
+  folderId: string | null
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("questions")
+    .update({ folder_id: folderId })
+    .eq("id", questionId);
+  if (error) {
+    console.error("assign question folder", error);
+    return false;
+  }
+  return true;
+}
+
+export async function assignVademecumFolder(
+  entryId: string,
+  folderId: string | null
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("vademecum")
+    .update({ folder_id: folderId })
+    .eq("id", entryId);
+  if (error) {
+    console.error("assign vademecum folder", error);
     return false;
   }
   return true;
