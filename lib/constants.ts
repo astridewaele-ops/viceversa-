@@ -1,11 +1,11 @@
 import type { Language } from "./types";
 
 export const TAGS: { id: string; label: string }[] = [
-  { id: "lexicaal", label: "lexicaal" },
-  { id: "syntactisch", label: "syntactisch" },
-  { id: "stilistisch", label: "stilistisch" },
-  { id: "pragmatisch", label: "pragmatisch" },
-  { id: "cultureel", label: "cultureel" },
+  { id: "lexicaal", label: "Lexicaal" },
+  { id: "syntactisch", label: "Syntactisch" },
+  { id: "stilistisch", label: "Stilistisch" },
+  { id: "pragmatisch", label: "Pragmatisch" },
+  { id: "cultureel", label: "Cultureel" },
 ];
 
 export const LANG_LABELS: Record<Language, string> = {
