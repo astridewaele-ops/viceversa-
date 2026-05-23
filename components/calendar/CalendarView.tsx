@@ -9,6 +9,15 @@ interface CalendarViewProps {
   currentUserId: string;
   onAdd: () => void;
   onDelete: (eventId: string) => Promise<void> | void;
+  onToggleAttendance: (eventId: string, attending: boolean) => Promise<void> | void;
+}
+
+function attendeesSentence(names: string[]): string {
+  const firsts = names.map((n) => n.split(" ")[0]);
+  if (firsts.length === 0) return "";
+  if (firsts.length === 1) return `${firsts[0]} gaat`;
+  if (firsts.length === 2) return `${firsts[0]} en ${firsts[1]} gaan`;
+  return `${firsts.slice(0, -1).join(", ")} en ${firsts[firsts.length - 1]} gaan`;
 }
 
 const MONTHS_NL = [
@@ -43,6 +52,7 @@ export function CalendarView({
   currentUserId,
   onAdd,
   onDelete,
+  onToggleAttendance,
 }: CalendarViewProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -111,10 +121,38 @@ export function CalendarView({
             {e.title}
           </div>
           <div className="cargo-mono mt-1.5" style={{ color: "#777" }}>
-            {f.day} {f.month} {f.year}
-            {e.location && ` · ${e.location}`}
+            {e.location || "—"}
             {adder && ` · door ${adder.name}`}
           </div>
+          {(() => {
+            const attendees = e.attendeeIds
+              .map((id) => users.find((u) => u.id === id))
+              .filter((u): u is User => !!u);
+            const isAttending = e.attendeeIds.includes(currentUserId);
+            return (
+              <div
+                className="cargo-mono mt-2 flex items-center gap-3 flex-wrap"
+                style={{ color: "#555" }}
+              >
+                {attendees.length > 0 ? (
+                  <span>{attendeesSentence(attendees.map((u) => u.name))}</span>
+                ) : (
+                  <span style={{ color: "#999" }}>nog niemand opgegeven</span>
+                )}
+                {!isPast && (
+                  <button
+                    onClick={() => onToggleAttendance(e.id, !isAttending)}
+                    style={{
+                      textDecoration: "underline",
+                      color: isAttending ? "#666" : "#111",
+                    }}
+                  >
+                    {isAttending ? "ik ga toch niet" : "ik ga"}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
         {e.link && (
           <a

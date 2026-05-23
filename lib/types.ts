@@ -68,6 +68,7 @@ export interface CalendarEvent {
   eventDate: string;
   addedBy: string;
   createdAt: string;
+  attendeeIds: string[];
 }
 
 export type FolderSection = "repertorium";

@@ -70,6 +70,11 @@ interface DbEvent {
   created_at: string;
 }
 
+interface DbAttendee {
+  event_id: string;
+  user_id: string;
+}
+
 interface DbFolder {
   id: string;
   section: FolderSection;
@@ -133,7 +138,7 @@ function mapQuestion(q: DbQuestion): Question {
   };
 }
 
-function mapEvent(e: DbEvent): CalendarEvent {
+function mapEvent(e: DbEvent, attendeeIds: string[] = []): CalendarEvent {
   return {
     id: e.id,
     title: e.title,
@@ -142,6 +147,7 @@ function mapEvent(e: DbEvent): CalendarEvent {
     eventDate: e.event_date,
     addedBy: e.added_by,
     createdAt: e.created_at.slice(0, 10),
+    attendeeIds,
   };
 }
 
@@ -159,7 +165,7 @@ function mapFolder(f: DbFolder): Folder {
 
 export async function fetchAppState(currentUserEmail: string): Promise<AppState> {
   const supabase = createClient();
-  const [profilesRes, booksRes, questionsRes, eventsRes, foldersRes] =
+  const [profilesRes, booksRes, questionsRes, eventsRes, attendeesRes, foldersRes] =
     await Promise.all([
       supabase.from("profiles").select("*"),
       supabase.from("books").select("*").order("created_at", { ascending: true }),
@@ -171,6 +177,7 @@ export async function fetchAppState(currentUserEmail: string): Promise<AppState>
         .from("events")
         .select("*")
         .order("event_date", { ascending: true }),
+      supabase.from("event_attendees").select("event_id, user_id"),
       supabase
         .from("folders")
         .select("*")
@@ -181,13 +188,21 @@ export async function fetchAppState(currentUserEmail: string): Promise<AppState>
   const books = (booksRes.data as DbBook[] | null) ?? [];
   const questions = (questionsRes.data as DbQuestion[] | null) ?? [];
   const events = (eventsRes.data as DbEvent[] | null) ?? [];
+  const attendees = (attendeesRes.data as DbAttendee[] | null) ?? [];
   const folders = (foldersRes.data as DbFolder[] | null) ?? [];
+
+  const attendeesByEvent = new Map<string, string[]>();
+  attendees.forEach((a) => {
+    const arr = attendeesByEvent.get(a.event_id) ?? [];
+    arr.push(a.user_id);
+    attendeesByEvent.set(a.event_id, arr);
+  });
 
   return {
     users: profiles.map((p) => mapProfile(p, "")),
     books: books.map(mapBook),
     questions: questions.map(mapQuestion),
-    events: events.map(mapEvent),
+    events: events.map((e) => mapEvent(e, attendeesByEvent.get(e.id) ?? [])),
     folders: folders.map(mapFolder),
   };
 }
@@ -489,6 +504,34 @@ export async function deleteEvent(eventId: string): Promise<boolean> {
   const { error } = await supabase.from("events").delete().eq("id", eventId);
   if (error) {
     console.error("delete event", error);
+    return false;
+  }
+  return true;
+}
+
+export async function setAttendance(
+  eventId: string,
+  userId: string,
+  attending: boolean
+): Promise<boolean> {
+  const supabase = createClient();
+  if (attending) {
+    const { error } = await supabase
+      .from("event_attendees")
+      .insert({ event_id: eventId, user_id: userId });
+    if (error && error.code !== "23505") {
+      console.error("set attendance", error);
+      return false;
+    }
+    return true;
+  }
+  const { error } = await supabase
+    .from("event_attendees")
+    .delete()
+    .eq("event_id", eventId)
+    .eq("user_id", userId);
+  if (error) {
+    console.error("clear attendance", error);
     return false;
   }
   return true;

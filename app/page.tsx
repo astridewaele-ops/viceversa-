@@ -18,6 +18,7 @@ import {
   insertEvent,
   insertFolder,
   insertQuestion,
+  setAttendance,
   updateAnswerBody,
   updateEmailNotifications,
   updateQuestionBody,
@@ -241,6 +242,30 @@ export default function HomePage() {
     setState((s) => ({
       ...s,
       events: s.events.filter((e) => e.id !== eventId),
+    }));
+  };
+
+  const handleToggleAttendance = async (
+    eventId: string,
+    attending: boolean
+  ) => {
+    if (!currentUser) return;
+    const ok = await setAttendance(eventId, currentUser.id, attending);
+    if (!ok) return;
+    setState((s) => ({
+      ...s,
+      events: s.events.map((e) =>
+        e.id !== eventId
+          ? e
+          : {
+              ...e,
+              attendeeIds: attending
+                ? e.attendeeIds.includes(currentUser.id)
+                  ? e.attendeeIds
+                  : [...e.attendeeIds, currentUser.id]
+                : e.attendeeIds.filter((id) => id !== currentUser.id),
+            }
+      ),
     }));
   };
 
@@ -682,6 +707,7 @@ export default function HomePage() {
             currentUserId={currentUser.id}
             onAdd={() => setShowAddEvent(true)}
             onDelete={handleDeleteEvent}
+            onToggleAttendance={handleToggleAttendance}
           />
         )}
 
