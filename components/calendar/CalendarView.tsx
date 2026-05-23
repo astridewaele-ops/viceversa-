@@ -189,8 +189,12 @@ export function CalendarView({
           <div className="cargo-mono" style={{ color: "#999" }}>
             Agenda · Events en subsidies
           </div>
-          <button onClick={onAdd} className="cargo-btn-primary">
-            + Event toevoegen
+          <button
+            onClick={onAdd}
+            className="cargo-mono flex items-center gap-1.5 hover:text-black transition-colors"
+            style={{ color: "#666" }}
+          >
+            + Event of subsidie toevoegen
           </button>
         </div>
       </section>

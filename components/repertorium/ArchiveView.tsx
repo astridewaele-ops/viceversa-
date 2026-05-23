@@ -125,7 +125,11 @@ export function ArchiveView({
           >
             Eigen dossiers
           </h2>
-          <button onClick={onNewFolder} className="cargo-btn-primary">
+          <button
+            onClick={onNewFolder}
+            className="cargo-mono flex items-center gap-1.5 hover:text-black transition-colors"
+            style={{ color: "#666" }}
+          >
             + Nieuw dossier
           </button>
         </div>
