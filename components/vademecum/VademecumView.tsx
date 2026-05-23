@@ -31,7 +31,7 @@ export function VademecumView({ vademecum, onOpenCategory }: VademecumViewProps)
             maxWidth: 900,
           }}
         >
-          Praktische vertaalvragen.
+          Praktische vragen.
         </h1>
       </section>
 
