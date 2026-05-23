@@ -2,7 +2,7 @@
 
 import type { Folder, Question } from "@/lib/types";
 import { TAGS, VERTICAL_RHYTHM } from "@/lib/constants";
-import { FolderCover } from "@/components/folders/FolderCover";
+import { ArchiveCardCover } from "@/components/folders/ArchiveCardCover";
 
 interface ArchiveViewProps {
   questions: Question[];
@@ -52,23 +52,20 @@ export function ArchiveView({
       <section className="pb-24 border-t pt-16" style={{ borderColor: "#e8e8e3" }}>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-24">
           {TAGS.map((t, idx) => {
-            const disabled = counts[t.id] === 0;
             const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
             return (
               <button
                 key={t.id}
                 onClick={() => onOpenCategory(t.id)}
-                className="flex flex-col items-start text-left animate-fadeIn group disabled:cursor-not-allowed"
+                className="flex flex-col items-start text-left animate-fadeIn group"
                 style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
-                disabled={disabled}
               >
-                <div className="transition-transform duration-300 group-enabled:group-hover:scale-105">
-                  <FolderCover
+                <div className="transition-transform duration-300 group-hover:scale-105">
+                  <ArchiveCardCover
                     name={t.label}
                     seed={`tag:${t.id}`}
                     count={counts[t.id]}
                     itemLabel={{ singular: "vraag", plural: "vragen" }}
-                    disabled={disabled}
                   />
                 </div>
               </button>
@@ -116,7 +113,7 @@ export function ArchiveView({
                   style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
                 >
                   <div className="transition-transform duration-300 group-hover:scale-105">
-                    <FolderCover
+                    <ArchiveCardCover
                       name={f.name}
                       seed={`folder:${f.id}`}
                       count={folderCounts[f.id]}
