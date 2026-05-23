@@ -465,9 +465,6 @@ export default function HomePage() {
               className="flex flex-wrap items-center gap-x-5 gap-y-2 py-6 border-t border-b"
               style={{ borderColor: "#e8e8e3" }}
             >
-              <div className="cargo-mono" style={{ color: "#999" }}>
-                Bibliotheek:
-              </div>
               <button
                 onClick={() => setFilterDir("all")}
                 className={`cargo-mono transition-colors ${
