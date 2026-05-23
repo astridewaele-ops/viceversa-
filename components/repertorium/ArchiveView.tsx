@@ -43,15 +43,7 @@ function ArchiveRow({ index, name, count, onClick }: RowProps) {
       >
         {name}
       </span>
-      <span
-        aria-hidden="true"
-        style={{
-          flex: 1,
-          borderBottom: "1px dotted rgba(0,0,0,0.22)",
-          alignSelf: "flex-end",
-          marginBottom: 6,
-        }}
-      />
+      <span style={{ flex: 1 }} />
       <span
         className="cargo-mono flex-shrink-0"
         style={{ color: "#999" }}
