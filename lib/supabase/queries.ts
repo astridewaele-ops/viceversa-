@@ -1,14 +1,13 @@
 import type {
   AppState,
   Book,
+  CalendarEvent,
   CoverPattern,
   Folder,
   FolderSection,
   Language,
   Question,
   User,
-  VademecumCategory,
-  VademecumEntry,
 } from "@/lib/types";
 import { createClient } from "./client";
 
@@ -61,16 +60,13 @@ interface DbQuestion {
   answers?: DbAnswer[];
 }
 
-interface DbVademecum {
+interface DbEvent {
   id: string;
-  category: VademecumCategory;
-  name: string;
-  for_whom: string | null;
-  deadline: string | null;
+  title: string;
   link: string | null;
-  added_by: string | null;
+  event_date: string;
+  added_by: string;
   created_at: string;
-  folder_id: string | null;
 }
 
 interface DbFolder {
@@ -136,17 +132,14 @@ function mapQuestion(q: DbQuestion): Question {
   };
 }
 
-function mapVademecum(v: DbVademecum): VademecumEntry {
+function mapEvent(e: DbEvent): CalendarEvent {
   return {
-    id: v.id,
-    category: v.category,
-    name: v.name,
-    forWhom: v.for_whom ?? "",
-    deadline: v.deadline ?? "",
-    link: v.link ?? "",
-    addedBy: v.added_by ?? "",
-    createdAt: v.created_at.slice(0, 10),
-    folderId: v.folder_id ?? null,
+    id: e.id,
+    title: e.title,
+    link: e.link ?? "",
+    eventDate: e.event_date,
+    addedBy: e.added_by,
+    createdAt: e.created_at.slice(0, 10),
   };
 }
 
@@ -164,7 +157,7 @@ function mapFolder(f: DbFolder): Folder {
 
 export async function fetchAppState(currentUserEmail: string): Promise<AppState> {
   const supabase = createClient();
-  const [profilesRes, booksRes, questionsRes, vademecumRes, foldersRes] =
+  const [profilesRes, booksRes, questionsRes, eventsRes, foldersRes] =
     await Promise.all([
       supabase.from("profiles").select("*"),
       supabase.from("books").select("*").order("created_at", { ascending: true }),
@@ -173,9 +166,9 @@ export async function fetchAppState(currentUserEmail: string): Promise<AppState>
         .select("*, answers(*)")
         .order("created_at", { ascending: false }),
       supabase
-        .from("vademecum")
+        .from("events")
         .select("*")
-        .order("created_at", { ascending: false }),
+        .order("event_date", { ascending: true }),
       supabase
         .from("folders")
         .select("*")
@@ -185,14 +178,14 @@ export async function fetchAppState(currentUserEmail: string): Promise<AppState>
   const profiles = (profilesRes.data as DbProfile[] | null) ?? [];
   const books = (booksRes.data as DbBook[] | null) ?? [];
   const questions = (questionsRes.data as DbQuestion[] | null) ?? [];
-  const vademecum = (vademecumRes.data as DbVademecum[] | null) ?? [];
+  const events = (eventsRes.data as DbEvent[] | null) ?? [];
   const folders = (foldersRes.data as DbFolder[] | null) ?? [];
 
   return {
     users: profiles.map((p) => mapProfile(p, "")),
     books: books.map(mapBook),
     questions: questions.map(mapQuestion),
-    vademecum: vademecum.map(mapVademecum),
+    events: events.map(mapEvent),
     folders: folders.map(mapFolder),
   };
 }
@@ -252,7 +245,7 @@ export async function updateEmailNotifications(
     .eq("id", userId);
 }
 
-// ============== Mutaties — vraag, antwoord, boek, vademecum ==============
+// ============== Mutaties — vraag, antwoord, boek, event ==============
 
 export interface QuestionInput {
   bookId: string;
@@ -417,22 +410,6 @@ export async function assignQuestionFolder(
   return true;
 }
 
-export async function assignVademecumFolder(
-  entryId: string,
-  folderId: string | null
-): Promise<boolean> {
-  const supabase = createClient();
-  const { error } = await supabase
-    .from("vademecum")
-    .update({ folder_id: folderId })
-    .eq("id", entryId);
-  if (error) {
-    console.error("assign vademecum folder", error);
-    return false;
-  }
-  return true;
-}
-
 export interface BookInput {
   title: string;
   author: string;
@@ -475,34 +452,40 @@ export async function insertBook(
   return mapBook(data as DbBook);
 }
 
-export interface VademecumInput {
-  category: VademecumCategory;
-  name: string;
-  forWhom: string;
-  deadline: string;
+export interface EventInput {
+  title: string;
   link: string;
+  eventDate: string;
 }
 
-export async function insertVademecum(
+export async function insertEvent(
   addedBy: string,
-  v: VademecumInput
-): Promise<VademecumEntry | null> {
+  e: EventInput
+): Promise<CalendarEvent | null> {
   const supabase = createClient();
   const { data, error } = await supabase
-    .from("vademecum")
+    .from("events")
     .insert({
-      category: v.category,
-      name: v.name,
-      for_whom: v.forWhom,
-      deadline: v.deadline,
-      link: v.link,
+      title: e.title,
+      link: e.link || null,
+      event_date: e.eventDate,
       added_by: addedBy,
     })
     .select()
     .single();
   if (error) {
-    console.error("insert vademecum", error);
+    console.error("insert event", error);
     return null;
   }
-  return mapVademecum(data as DbVademecum);
+  return mapEvent(data as DbEvent);
+}
+
+export async function deleteEvent(eventId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase.from("events").delete().eq("id", eventId);
+  if (error) {
+    console.error("delete event", error);
+    return false;
+  }
+  return true;
 }

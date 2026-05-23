@@ -1,27 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import type { Book, Question, VademecumEntry } from "@/lib/types";
+import type { Book, Question } from "@/lib/types";
 import { Modal } from "./Modal";
-
-type ItemKind = "question" | "vademecum";
 
 interface AddToFolderModalProps {
   folderName: string;
-  kind: ItemKind;
-  questions?: Question[];
-  vademecum?: VademecumEntry[];
-  books?: Book[];
+  questions: Question[];
+  books: Book[];
   onClose: () => void;
   onPick: (itemId: string) => Promise<void> | void;
 }
 
 export function AddToFolderModal({
   folderName,
-  kind,
-  questions = [],
-  vademecum = [],
-  books = [],
+  questions,
+  books,
   onClose,
   onPick,
 }: AddToFolderModalProps) {
@@ -36,13 +30,9 @@ export function AddToFolderModal({
     }
   };
 
-  const isEmpty =
-    (kind === "question" && questions.length === 0) ||
-    (kind === "vademecum" && vademecum.length === 0);
-
   return (
     <Modal title={`Toevoegen aan: ${folderName}`} onClose={onClose} wide>
-      {isEmpty ? (
+      {questions.length === 0 ? (
         <p
           style={{
             fontFamily: "var(--font-serif)",
@@ -51,44 +41,16 @@ export function AddToFolderModal({
             color: "#666",
           }}
         >
-          {kind === "question"
-            ? "Geen vragen meer om aan deze map toe te voegen."
-            : "Geen items meer om aan deze map toe te voegen."}
+          Geen vragen meer om aan dit dossier toe te voegen.
         </p>
       ) : (
         <div className="divide-y" style={{ borderColor: "#e8e8e3" }}>
-          {kind === "question" &&
-            questions.map((q) => {
-              const book = books.find((b) => b.id === q.bookId);
-              return (
-                <button
-                  key={q.id}
-                  onClick={() => handlePick(q.id)}
-                  disabled={busyId !== null}
-                  className="w-full text-left py-4 px-2 -mx-2 hover:bg-black/[0.02] transition-colors disabled:opacity-40"
-                  style={{ borderColor: "#e8e8e3" }}
-                >
-                  <div
-                    style={{
-                      fontFamily: "var(--font-serif)",
-                      fontSize: 17,
-                      lineHeight: 1.25,
-                    }}
-                  >
-                    {q.title}
-                  </div>
-                  <div className="cargo-mono mt-1.5" style={{ color: "#888" }}>
-                    {book ? `${book.code} · ${book.title}` : ""} · {q.createdAt}
-                    {busyId === q.id && " · toevoegen…"}
-                  </div>
-                </button>
-              );
-            })}
-          {kind === "vademecum" &&
-            vademecum.map((e) => (
+          {questions.map((q) => {
+            const book = books.find((b) => b.id === q.bookId);
+            return (
               <button
-                key={e.id}
-                onClick={() => handlePick(e.id)}
+                key={q.id}
+                onClick={() => handlePick(q.id)}
                 disabled={busyId !== null}
                 className="w-full text-left py-4 px-2 -mx-2 hover:bg-black/[0.02] transition-colors disabled:opacity-40"
                 style={{ borderColor: "#e8e8e3" }}
@@ -100,15 +62,15 @@ export function AddToFolderModal({
                     lineHeight: 1.25,
                   }}
                 >
-                  {e.name}
+                  {q.title}
                 </div>
                 <div className="cargo-mono mt-1.5" style={{ color: "#888" }}>
-                  {e.category}
-                  {e.forWhom && ` · ${e.forWhom}`}
-                  {busyId === e.id && " · toevoegen…"}
+                  {book ? `${book.code} · ${book.title}` : ""} · {q.createdAt}
+                  {busyId === q.id && " · toevoegen…"}
                 </div>
               </button>
-            ))}
+            );
+          })}
         </div>
       )}
     </Modal>

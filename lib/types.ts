@@ -60,21 +60,16 @@ export interface Question {
   folderId?: string | null;
 }
 
-export type VademecumCategory = "subsidies" | "workshops" | "uitgeverijen";
-
-export interface VademecumEntry {
+export interface CalendarEvent {
   id: string;
-  category: VademecumCategory;
-  name: string;
-  forWhom: string;
-  deadline: string;
+  title: string;
   link: string;
+  eventDate: string;
   addedBy: string;
   createdAt: string;
-  folderId?: string | null;
 }
 
-export type FolderSection = "repertorium" | "vademecum";
+export type FolderSection = "repertorium";
 
 export interface Folder {
   id: string;
@@ -88,7 +83,7 @@ export interface AppState {
   users: User[];
   books: Book[];
   questions: Question[];
-  vademecum: VademecumEntry[];
+  events: CalendarEvent[];
   folders: Folder[];
 }
 
@@ -108,6 +103,5 @@ export type View =
   | { page: "book"; bookId: string; focusQuestion?: string; origin?: View }
   | { page: "archive" }
   | { page: "category"; tag: string }
-  | { page: "vademecum" }
-  | { page: "vademecum-category"; vcat: VademecumCategory }
+  | { page: "calendar" }
   | { page: "folder"; section: FolderSection; folderId: string };

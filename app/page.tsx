@@ -7,17 +7,17 @@ import { Inbox } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   assignQuestionFolder,
-  assignVademecumFolder,
   createProfile,
   deleteAnswer,
+  deleteEvent,
   deleteFolder,
   deleteQuestion,
   fetchAppState,
   insertAnswer,
   insertBook,
+  insertEvent,
   insertFolder,
   insertQuestion,
-  insertVademecum,
   updateAnswerBody,
   updateEmailNotifications,
   updateQuestionBody,
@@ -27,7 +27,6 @@ import type {
   FolderSection,
   Language,
   Question,
-  VademecumCategory,
   View,
 } from "@/lib/types";
 import { VERTICAL_RHYTHM } from "@/lib/constants";
@@ -42,18 +41,14 @@ import { BookView } from "@/components/library/BookView";
 import { ReciprocitySection } from "@/components/library/ReciprocitySection";
 import { ArchiveView } from "@/components/repertorium/ArchiveView";
 import { CategoryView } from "@/components/repertorium/CategoryView";
-import { VademecumView } from "@/components/vademecum/VademecumView";
-import { VademecumCategoryView } from "@/components/vademecum/VademecumCategoryView";
+import { CalendarView } from "@/components/calendar/CalendarView";
 import { FolderView } from "@/components/folders/FolderView";
 import {
   AskQuestionModal,
   type QuestionDraft,
 } from "@/components/modals/AskQuestionModal";
 import { AddBookModal, type BookDraft } from "@/components/modals/AddBookModal";
-import {
-  AddVademecumModal,
-  type VademecumDraft,
-} from "@/components/modals/AddVademecumModal";
+import { AddEventModal, type EventDraft } from "@/components/modals/AddEventModal";
 import { ProfileModal } from "@/components/modals/ProfileModal";
 import { InboxModal } from "@/components/modals/InboxModal";
 import {
@@ -70,7 +65,7 @@ const EMPTY_STATE: AppState = {
   users: [],
   books: [],
   questions: [],
-  vademecum: [],
+  events: [],
   folders: [],
 };
 
@@ -86,7 +81,7 @@ export default function HomePage() {
   const [showProfile, setShowProfile] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState<EmailPreviewInfo | null>(null);
-  const [showAddVademecum, setShowAddVademecum] = useState<VademecumCategory | null>(null);
+  const [showAddEvent, setShowAddEvent] = useState(false);
   const [filterDir, setFilterDir] = useState<FilterDir>("all");
   const [createFolderSection, setCreateFolderSection] =
     useState<FolderSection | null>(null);
@@ -220,11 +215,21 @@ export default function HomePage() {
     setState((s) => ({ ...s, books: [...s.books, newBook] }));
   };
 
-  const handleAddVademecum = async (entry: VademecumDraft) => {
+  const handleAddEvent = async (draft: EventDraft) => {
     if (!currentUser) return;
-    const newEntry = await insertVademecum(currentUser.id, entry);
-    if (!newEntry) return;
-    setState((s) => ({ ...s, vademecum: [newEntry, ...s.vademecum] }));
+    const newEvent = await insertEvent(currentUser.id, draft);
+    if (!newEvent) throw new Error("Toevoegen mislukt.");
+    setState((s) => ({ ...s, events: [...s.events, newEvent] }));
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!currentUser) return;
+    const ok = await deleteEvent(eventId);
+    if (!ok) return;
+    setState((s) => ({
+      ...s,
+      events: s.events.filter((e) => e.id !== eventId),
+    }));
   };
 
   const handleEditQuestion = async (questionId: string, text: string) => {
@@ -309,9 +314,6 @@ export default function HomePage() {
       questions: s.questions.map((q) =>
         q.folderId === folderId ? { ...q, folderId: null } : q
       ),
-      vademecum: s.vademecum.map((e) =>
-        e.folderId === folderId ? { ...e, folderId: null } : e
-      ),
     }));
     setView({ page: "archive" });
   };
@@ -327,21 +329,6 @@ export default function HomePage() {
       ...s,
       questions: s.questions.map((q) =>
         q.id === questionId ? { ...q, folderId } : q
-      ),
-    }));
-  };
-
-  const handleAssignVademecumToFolder = async (
-    entryId: string,
-    folderId: string | null
-  ) => {
-    if (!currentUser) return;
-    const ok = await assignVademecumFolder(entryId, folderId);
-    if (!ok) return;
-    setState((s) => ({
-      ...s,
-      vademecum: s.vademecum.map((e) =>
-        e.id === entryId ? { ...e, folderId } : e
       ),
     }));
   };
@@ -459,16 +446,13 @@ export default function HomePage() {
                 Repertorium
               </button>
               <button
-                onClick={() => setView({ page: "vademecum" })}
+                onClick={() => setView({ page: "calendar" })}
                 className="cargo-mono transition-colors"
                 style={{
-                  color: navColor(
-                    view.page === "vademecum" ||
-                      view.page === "vademecum-category"
-                  ),
+                  color: navColor(view.page === "calendar"),
                 }}
               >
-                Vademecum
+                Kalender
               </button>
             </nav>
           </div>
@@ -679,25 +663,13 @@ export default function HomePage() {
           />
         )}
 
-        {view.page === "vademecum" && (
-          <VademecumView
-            vademecum={state.vademecum}
-            folders={state.folders}
-            onOpenCategory={(vcat) => setView({ page: "vademecum-category", vcat })}
-            onOpenFolder={(folderId) =>
-              setView({ page: "folder", section: "vademecum", folderId })
-            }
-            onNewFolder={() => setCreateFolderSection("vademecum")}
-          />
-        )}
-
-        {view.page === "vademecum-category" && (
-          <VademecumCategoryView
-            vcat={view.vcat}
-            vademecum={state.vademecum}
+        {view.page === "calendar" && (
+          <CalendarView
+            events={state.events}
             users={state.users}
-            onBack={() => setView({ page: "vademecum" })}
-            onAdd={() => setShowAddVademecum(view.vcat)}
+            currentUserId={currentUser.id}
+            onAdd={() => setShowAddEvent(true)}
+            onDelete={handleDeleteEvent}
           />
         )}
 
@@ -707,11 +679,7 @@ export default function HomePage() {
             return (
               <div className="py-12">
                 <button
-                  onClick={() =>
-                    setView({
-                      page: view.section === "repertorium" ? "archive" : "vademecum",
-                    })
-                  }
+                  onClick={() => setView({ page: "archive" })}
                   className="cargo-back mb-8"
                 >
                   ← Terug
@@ -724,7 +692,7 @@ export default function HomePage() {
                     color: "#666",
                   }}
                 >
-                  Deze map bestaat niet meer.
+                  Dit dossier bestaat niet meer.
                 </p>
               </div>
             );
@@ -734,18 +702,10 @@ export default function HomePage() {
               folder={folder}
               state={state}
               currentUserId={currentUser.id}
-              onBack={() =>
-                setView({
-                  page: folder.section === "repertorium" ? "archive" : "vademecum",
-                })
-              }
+              onBack={() => setView({ page: "archive" })}
               onAddItem={() => setAddToFolderId(folder.id)}
               onRemoveItem={async (itemId) => {
-                if (folder.section === "repertorium") {
-                  await handleAssignQuestionToFolder(itemId, null);
-                } else {
-                  await handleAssignVademecumToFolder(itemId, null);
-                }
+                await handleAssignQuestionToFolder(itemId, null);
               }}
               onDeleteFolder={async () => {
                 await handleDeleteFolder(folder.id);
@@ -787,13 +747,11 @@ export default function HomePage() {
           }}
         />
       )}
-      {showAddVademecum && (
-        <AddVademecumModal
-          category={showAddVademecum}
-          onClose={() => setShowAddVademecum(null)}
-          onSubmit={(e) => {
-            handleAddVademecum(e);
-            setShowAddVademecum(null);
+      {showAddEvent && (
+        <AddEventModal
+          onClose={() => setShowAddEvent(false)}
+          onSubmit={async (draft) => {
+            await handleAddEvent(draft);
           }}
         />
       )}
@@ -827,9 +785,7 @@ export default function HomePage() {
       )}
       {createFolderSection && (
         <CreateFolderModal
-          sectionLabel={
-            createFolderSection === "repertorium" ? "repertorium" : "vademecum"
-          }
+          sectionLabel="repertorium"
           onClose={() => setCreateFolderSection(null)}
           onSubmit={async (name) => {
             await handleCreateFolder(createFolderSection, name);
@@ -839,28 +795,17 @@ export default function HomePage() {
       {addToFolderId && (() => {
         const folder = state.folders.find((f) => f.id === addToFolderId);
         if (!folder) return null;
-        const availableQuestions =
-          folder.section === "repertorium"
-            ? state.questions.filter((q) => q.folderId !== folder.id)
-            : [];
-        const availableEntries =
-          folder.section === "vademecum"
-            ? state.vademecum.filter((e) => e.folderId !== folder.id)
-            : [];
+        const availableQuestions = state.questions.filter(
+          (q) => q.folderId !== folder.id
+        );
         return (
           <AddToFolderModal
             folderName={folder.name}
-            kind={folder.section === "repertorium" ? "question" : "vademecum"}
             questions={availableQuestions}
-            vademecum={availableEntries}
             books={state.books}
             onClose={() => setAddToFolderId(null)}
             onPick={async (itemId) => {
-              if (folder.section === "repertorium") {
-                await handleAssignQuestionToFolder(itemId, folder.id);
-              } else {
-                await handleAssignVademecumToFolder(itemId, folder.id);
-              }
+              await handleAssignQuestionToFolder(itemId, folder.id);
             }}
           />
         );
