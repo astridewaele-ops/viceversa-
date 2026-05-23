@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
-import { Inbox } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   assignQuestionFolder,
@@ -496,10 +495,9 @@ export default function HomePage() {
           <div className="flex items-center gap-6">
             <button
               onClick={() => setShowInbox(true)}
-              className="cargo-mono flex items-center gap-1.5 hover:text-black transition-colors"
+              className="cargo-mono hover:text-black transition-colors"
               style={{ color: notifications.length > 0 ? "#111" : "#999" }}
             >
-              <Inbox className="w-3 h-3" strokeWidth={1.5} />{" "}
               {notifications.length > 0
                 ? `Inbox (${notifications.length})`
                 : "Inbox"}
