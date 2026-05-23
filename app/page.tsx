@@ -511,14 +511,14 @@ export default function HomePage() {
               <h1
                 style={{
                   fontFamily: "var(--font-serif)",
-                  fontSize: "clamp(36px, 5vw, 64px)",
+                  fontSize: "clamp(24px, 3vw, 36px)",
                   fontWeight: 300,
-                  lineHeight: 0.98,
-                  letterSpacing: "-0.025em",
+                  lineHeight: 1.05,
+                  letterSpacing: "-0.02em",
                   maxWidth: 900,
                 }}
               >
-                Vertaalvragen per boek.
+                Vertaalvragen per boek
               </h1>
             </section>
 
