@@ -1,7 +1,7 @@
 "use client";
 
 import type { Folder, Question } from "@/lib/types";
-import { TAGS } from "@/lib/constants";
+import { TAGS, VERTICAL_RHYTHM } from "@/lib/constants";
 import { FolderCover } from "@/components/folders/FolderCover";
 
 interface ArchiveViewProps {
@@ -49,32 +49,32 @@ export function ArchiveView({
         </h1>
       </section>
 
-      <section
-        className="pb-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 border-t pt-16"
-        style={{ borderColor: "#e8e8e3" }}
-      >
-        {TAGS.map((t, idx) => {
-          const disabled = counts[t.id] === 0;
-          return (
-            <button
-              key={t.id}
-              onClick={() => onOpenCategory(t.id)}
-              className="text-left animate-fadeIn group disabled:cursor-not-allowed"
-              style={{ animationDelay: `${idx * 50}ms` }}
-              disabled={disabled}
-            >
-              <div className="transition-transform duration-300 group-enabled:group-hover:scale-[1.02]">
-                <FolderCover
-                  name={t.label}
-                  seed={`tag:${t.id}`}
-                  count={counts[t.id]}
-                  itemLabel={{ singular: "vraag", plural: "vragen" }}
-                  disabled={disabled}
-                />
-              </div>
-            </button>
-          );
-        })}
+      <section className="pb-24 border-t pt-16" style={{ borderColor: "#e8e8e3" }}>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-24">
+          {TAGS.map((t, idx) => {
+            const disabled = counts[t.id] === 0;
+            const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
+            return (
+              <button
+                key={t.id}
+                onClick={() => onOpenCategory(t.id)}
+                className="flex flex-col items-start text-left animate-fadeIn group disabled:cursor-not-allowed"
+                style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
+                disabled={disabled}
+              >
+                <div className="transition-transform duration-300 group-enabled:group-hover:scale-105">
+                  <FolderCover
+                    name={t.label}
+                    seed={`tag:${t.id}`}
+                    count={counts[t.id]}
+                    itemLabel={{ singular: "vraag", plural: "vragen" }}
+                    disabled={disabled}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <section className="pb-24 border-t pt-16" style={{ borderColor: "#e8e8e3" }}>
@@ -105,24 +105,27 @@ export function ArchiveView({
             Nog geen eigen mappen. Maak er één aan om vragen te ordenen.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
-            {myFolders.map((f, idx) => (
-              <button
-                key={f.id}
-                onClick={() => onOpenFolder(f.id)}
-                className="text-left animate-fadeIn group"
-                style={{ animationDelay: `${idx * 40}ms` }}
-              >
-                <div className="transition-transform duration-300 group-hover:scale-[1.02]">
-                  <FolderCover
-                    name={f.name}
-                    seed={`folder:${f.id}`}
-                    count={folderCounts[f.id]}
-                    itemLabel={{ singular: "vraag", plural: "vragen" }}
-                  />
-                </div>
-              </button>
-            ))}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-24">
+            {myFolders.map((f, idx) => {
+              const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => onOpenFolder(f.id)}
+                  className="flex flex-col items-start text-left animate-fadeIn group"
+                  style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
+                >
+                  <div className="transition-transform duration-300 group-hover:scale-105">
+                    <FolderCover
+                      name={f.name}
+                      seed={`folder:${f.id}`}
+                      count={folderCounts[f.id]}
+                      itemLabel={{ singular: "vraag", plural: "vragen" }}
+                    />
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </section>

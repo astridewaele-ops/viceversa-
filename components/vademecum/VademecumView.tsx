@@ -1,7 +1,7 @@
 "use client";
 
 import type { Folder, VademecumCategory, VademecumEntry } from "@/lib/types";
-import { VADEMECUM_CATEGORIES } from "@/lib/constants";
+import { VADEMECUM_CATEGORIES, VERTICAL_RHYTHM } from "@/lib/constants";
 import { FolderCover } from "@/components/folders/FolderCover";
 
 interface VademecumViewProps {
@@ -49,27 +49,29 @@ export function VademecumView({
         </h1>
       </section>
 
-      <section
-        className="pb-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 border-t pt-16"
-        style={{ borderColor: "#e8e8e3" }}
-      >
-        {VADEMECUM_CATEGORIES.map((c, idx) => (
-          <button
-            key={c.id}
-            onClick={() => onOpenCategory(c.id)}
-            className="text-left animate-fadeIn group"
-            style={{ animationDelay: `${idx * 50}ms` }}
-          >
-            <div className="transition-transform duration-300 group-hover:scale-[1.02]">
-              <FolderCover
-                name={c.label}
-                seed={`vcat:${c.id}`}
-                count={counts[c.id]}
-                itemLabel={{ singular: "item", plural: "items" }}
-              />
-            </div>
-          </button>
-        ))}
+      <section className="pb-24 border-t pt-16" style={{ borderColor: "#e8e8e3" }}>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-24">
+          {VADEMECUM_CATEGORIES.map((c, idx) => {
+            const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
+            return (
+              <button
+                key={c.id}
+                onClick={() => onOpenCategory(c.id)}
+                className="flex flex-col items-start text-left animate-fadeIn group"
+                style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
+              >
+                <div className="transition-transform duration-300 group-hover:scale-105">
+                  <FolderCover
+                    name={c.label}
+                    seed={`vcat:${c.id}`}
+                    count={counts[c.id]}
+                    itemLabel={{ singular: "item", plural: "items" }}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <section className="pb-24 border-t pt-16" style={{ borderColor: "#e8e8e3" }}>
@@ -100,24 +102,27 @@ export function VademecumView({
             Nog geen eigen mappen. Maak er één aan om items te ordenen.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
-            {myFolders.map((f, idx) => (
-              <button
-                key={f.id}
-                onClick={() => onOpenFolder(f.id)}
-                className="text-left animate-fadeIn group"
-                style={{ animationDelay: `${idx * 40}ms` }}
-              >
-                <div className="transition-transform duration-300 group-hover:scale-[1.02]">
-                  <FolderCover
-                    name={f.name}
-                    seed={`folder:${f.id}`}
-                    count={folderCounts[f.id]}
-                    itemLabel={{ singular: "item", plural: "items" }}
-                  />
-                </div>
-              </button>
-            ))}
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-24">
+            {myFolders.map((f, idx) => {
+              const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => onOpenFolder(f.id)}
+                  className="flex flex-col items-start text-left animate-fadeIn group"
+                  style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
+                >
+                  <div className="transition-transform duration-300 group-hover:scale-105">
+                    <FolderCover
+                      name={f.name}
+                      seed={`folder:${f.id}`}
+                      count={folderCounts[f.id]}
+                      itemLabel={{ singular: "item", plural: "items" }}
+                    />
+                  </div>
+                </button>
+              );
+            })}
           </div>
         )}
       </section>

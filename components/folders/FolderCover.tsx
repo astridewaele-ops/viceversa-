@@ -15,14 +15,16 @@ const FOLDER_PALETTE: Array<{
   accent: string;
   pattern: CoverPattern;
 }> = [
-  { bg: "#3a2f1f", accent: "#c4a559", pattern: "horizontal" },
-  { bg: "#7a1f2b", accent: "#e8d5a8", pattern: "ornate" },
-  { bg: "#2a3a2a", accent: "#e8d5a8", pattern: "vertical" },
-  { bg: "#5a4a6a", accent: "#f0e8d5", pattern: "wavy" },
-  { bg: "#1f2a3a", accent: "#e8a59f", pattern: "modern" },
-  { bg: "#d4823a", accent: "#3a1f1a", pattern: "tropical" },
-  { bg: "#1a2530", accent: "#e0d5b8", pattern: "horizontal" },
-  { bg: "#ede4d3", accent: "#1a1a1a", pattern: "minimal" },
+  { bg: "#d4b888", accent: "#5a3a1f", pattern: "horizontal" }, // manilakarton
+  { bg: "#8a6a4a", accent: "#f0e0c0", pattern: "ornate" }, // kraftbruin
+  { bg: "#7a8a5a", accent: "#f0e8d5", pattern: "vertical" }, // archiefgroen
+  { bg: "#a85a45", accent: "#f0e8d5", pattern: "horizontal" }, // dossierrood
+  { bg: "#5a7a9a", accent: "#f0e8d5", pattern: "modern" }, // dossierblauw
+  { bg: "#c4a045", accent: "#3a2f1f", pattern: "horizontal" }, // dossiergeel
+  { bg: "#9a8a6a", accent: "#3a2f1f", pattern: "ornate" }, // beige
+  { bg: "#5a6a5a", accent: "#e8d5a8", pattern: "wavy" }, // donkergroen
+  { bg: "#b87a5a", accent: "#f0e8d5", pattern: "vertical" }, // terra
+  { bg: "#3a4a5a", accent: "#d4b888", pattern: "modern" }, // staalgrijs
 ];
 
 function paletteFor(seed: string) {
@@ -38,8 +40,8 @@ export function FolderCover({
   seed,
   count,
   itemLabel,
-  w = 280,
-  h = 168,
+  w = 140,
+  h = 210,
   disabled = false,
 }: FolderCoverProps) {
   const { bg, accent, pattern } = paletteFor(seed);
@@ -130,7 +132,7 @@ export function FolderCover({
         style={{
           position: "absolute",
           inset: 0,
-          padding: 16,
+          padding: 12,
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
@@ -139,7 +141,7 @@ export function FolderCover({
         <div
           style={{
             fontFamily: "var(--font-serif)",
-            fontSize: w < 200 ? 14 : 18,
+            fontSize: w < 120 ? 11 : 14,
             fontWeight: 500,
             lineHeight: 1.15,
             letterSpacing: "-0.01em",
@@ -149,7 +151,7 @@ export function FolderCover({
         </div>
         <div
           style={{
-            fontSize: w < 200 ? 8 : 9,
+            fontSize: w < 120 ? 7 : 9,
             opacity: 0.8,
             textTransform: "uppercase",
             letterSpacing: "0.18em",
