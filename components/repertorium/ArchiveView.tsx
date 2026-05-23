@@ -1,8 +1,7 @@
 "use client";
 
 import type { Folder, Question } from "@/lib/types";
-import { TAGS, VERTICAL_RHYTHM } from "@/lib/constants";
-import { ArchiveCardCover } from "@/components/folders/ArchiveCardCover";
+import { TAGS } from "@/lib/constants";
 
 interface ArchiveViewProps {
   questions: Question[];
@@ -10,6 +9,57 @@ interface ArchiveViewProps {
   onOpenCategory: (tag: string) => void;
   onOpenFolder: (folderId: string) => void;
   onNewFolder: () => void;
+}
+
+interface RowProps {
+  index: number;
+  name: string;
+  count: number;
+  onClick: () => void;
+}
+
+function ArchiveRow({ index, name, count, onClick }: RowProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-baseline gap-3 py-3.5 border-b text-left transition-colors hover:bg-[#f4ecdc]/40 group"
+      style={{ borderColor: "rgba(0,0,0,0.14)" }}
+    >
+      <span
+        className="cargo-mono flex-shrink-0"
+        style={{ width: 64, color: "#999" }}
+      >
+        № {String(index).padStart(2, "0")}
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: 19,
+          color: "#222",
+          letterSpacing: "-0.01em",
+          lineHeight: 1.2,
+        }}
+        className="group-hover:text-black transition-colors"
+      >
+        {name}
+      </span>
+      <span
+        aria-hidden="true"
+        style={{
+          flex: 1,
+          borderBottom: "1px dotted rgba(0,0,0,0.22)",
+          alignSelf: "flex-end",
+          marginBottom: 6,
+        }}
+      />
+      <span
+        className="cargo-mono flex-shrink-0"
+        style={{ color: "#999" }}
+      >
+        {count} {count === 1 ? "vraag" : "vragen"}
+      </span>
+    </button>
+  );
 }
 
 export function ArchiveView({
@@ -49,40 +99,29 @@ export function ArchiveView({
         </h1>
       </section>
 
-      <section className="pb-24 border-t pt-16" style={{ borderColor: "#e8e8e3" }}>
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-24">
-          {TAGS.map((t, idx) => {
-            const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
-            return (
-              <button
-                key={t.id}
-                onClick={() => onOpenCategory(t.id)}
-                className="flex flex-col items-start text-left animate-fadeIn group"
-                style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
-              >
-                <div className="transition-transform duration-300 group-hover:scale-105">
-                  <ArchiveCardCover
-                    name={t.label}
-                    seed={`tag:${t.id}`}
-                    count={counts[t.id]}
-                    itemLabel={{ singular: "vraag", plural: "vragen" }}
-                  />
-                </div>
-              </button>
-            );
-          })}
-        </div>
+      <section
+        className="pb-16 border-t pt-2"
+        style={{ borderColor: "rgba(0,0,0,0.14)" }}
+      >
+        {TAGS.map((t, idx) => (
+          <ArchiveRow
+            key={t.id}
+            index={idx + 1}
+            name={t.label}
+            count={counts[t.id]}
+            onClick={() => onOpenCategory(t.id)}
+          />
+        ))}
       </section>
 
-      <section className="pb-24 border-t pt-16" style={{ borderColor: "#e8e8e3" }}>
-        <div className="flex items-baseline justify-between mb-8">
+      <section
+        className="pb-24 border-t pt-10"
+        style={{ borderColor: "rgba(0,0,0,0.14)" }}
+      >
+        <div className="flex items-baseline justify-between mb-4">
           <h2
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: 28,
-              fontWeight: 300,
-              letterSpacing: "-0.01em",
-            }}
+            className="cargo-mono"
+            style={{ color: "#999" }}
           >
             Eigen dossiers
           </h2>
@@ -92,37 +131,27 @@ export function ArchiveView({
         </div>
         {myFolders.length === 0 ? (
           <p
+            className="py-4"
             style={{
               fontFamily: "var(--font-serif)",
-              fontSize: 16,
+              fontSize: 15,
               fontStyle: "italic",
-              color: "#666",
+              color: "#888",
             }}
           >
             Nog geen eigen dossiers.
           </p>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-24">
-            {myFolders.map((f, idx) => {
-              const offset = VERTICAL_RHYTHM[idx % VERTICAL_RHYTHM.length];
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => onOpenFolder(f.id)}
-                  className="flex flex-col items-start text-left animate-fadeIn group"
-                  style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
-                >
-                  <div className="transition-transform duration-300 group-hover:scale-105">
-                    <ArchiveCardCover
-                      name={f.name}
-                      seed={`folder:${f.id}`}
-                      count={folderCounts[f.id]}
-                      itemLabel={{ singular: "vraag", plural: "vragen" }}
-                    />
-                  </div>
-                </button>
-              );
-            })}
+          <div className="border-t" style={{ borderColor: "rgba(0,0,0,0.14)" }}>
+            {myFolders.map((f, idx) => (
+              <ArchiveRow
+                key={f.id}
+                index={TAGS.length + idx + 1}
+                name={f.name}
+                count={folderCounts[f.id]}
+                onClick={() => onOpenFolder(f.id)}
+              />
+            ))}
           </div>
         )}
       </section>
