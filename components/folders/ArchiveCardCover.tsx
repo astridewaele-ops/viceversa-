@@ -12,16 +12,18 @@ interface ManilaTone {
   tab: string;
   text: string;
   rule: string;
+  ruleSpacing: number;
+  ruleOpacity: number;
 }
 
 const MANILA_PALETTE: ManilaTone[] = [
-  { bg: "#ead7a8", tab: "#d4ba80", text: "#4a3320", rule: "#c8a978" }, // licht manila
-  { bg: "#d8be8a", tab: "#b89868", text: "#3a2718", rule: "#a88858" }, // warm manila
-  { bg: "#dcc095", tab: "#bf9d6b", text: "#4a3320", rule: "#b48a60" }, // tan
-  { bg: "#cba87a", tab: "#a48253", text: "#3a2718", rule: "#8c7148" }, // kraft
-  { bg: "#e2c89a", tab: "#c5a874", text: "#4a3320", rule: "#b89858" }, // beige
-  { bg: "#d4b888", tab: "#b09060", text: "#3a2718", rule: "#a88858" }, // donker manila
-  { bg: "#e6cfa0", tab: "#cca77a", text: "#3a2718", rule: "#b89058" }, // bleek goud
+  { bg: "#f0e3c0", tab: "#dec79a", text: "#5a3a1f", rule: "#c8a978", ruleSpacing: 14, ruleOpacity: 0.28 }, // bleek manila
+  { bg: "#ead0a2", tab: "#d4b485", text: "#4a3320", rule: "#b89868", ruleSpacing: 16, ruleOpacity: 0.26 }, // warm manila
+  { bg: "#e8d6b2", tab: "#cfae7e", text: "#4a3320", rule: "#b48a60", ruleSpacing: 12, ruleOpacity: 0.30 }, // tan
+  { bg: "#dec19a", tab: "#bf9a70", text: "#3a2718", rule: "#9c7d52", ruleSpacing: 18, ruleOpacity: 0.24 }, // kraft
+  { bg: "#f0d8b0", tab: "#dabd8e", text: "#4a3320", rule: "#c0a070", ruleSpacing: 13, ruleOpacity: 0.30 }, // beige
+  { bg: "#e6cda0", tab: "#caa978", text: "#3a2718", rule: "#a88858", ruleSpacing: 20, ruleOpacity: 0.24 }, // gedempt goud
+  { bg: "#f2dbab", tab: "#d8b884", text: "#3a2718", rule: "#c09858", ruleSpacing: 11, ruleOpacity: 0.32 }, // bleek goud
 ];
 
 function paletteFor(seed: string): ManilaTone {
@@ -40,7 +42,7 @@ export function ArchiveCardCover({
   w = 140,
   h = 210,
 }: ArchiveCardCoverProps) {
-  const { bg, tab, text, rule } = paletteFor(seed);
+  const { bg, tab, text, rule, ruleSpacing, ruleOpacity } = paletteFor(seed);
 
   return (
     <div
@@ -89,10 +91,11 @@ export function ArchiveCardCover({
             <div
               style={{
                 fontFamily: "var(--font-serif)",
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: 500,
                 lineHeight: 1.15,
-                letterSpacing: "-0.01em",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
               }}
             >
               {name}
@@ -102,16 +105,16 @@ export function ArchiveCardCover({
                 marginTop: 6,
                 height: 1,
                 backgroundColor: rule,
-                opacity: 0.85,
+                opacity: 0.7,
               }}
             />
-            {/* Tone-on-tone horizontale lijntjes — archiefkaart-look */}
+            {/* Tone-on-tone horizontale lijntjes — varieert per kaart */}
             <div
               style={{
                 marginTop: 10,
                 height: 110,
-                backgroundImage: `repeating-linear-gradient(0deg, ${rule}, ${rule} 1px, transparent 1px, transparent 14px)`,
-                opacity: 0.35,
+                backgroundImage: `repeating-linear-gradient(0deg, ${rule}, ${rule} 1px, transparent 1px, transparent ${ruleSpacing}px)`,
+                opacity: ruleOpacity,
               }}
             />
           </div>
