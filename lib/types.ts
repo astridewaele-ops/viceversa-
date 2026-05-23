@@ -64,6 +64,7 @@ export interface CalendarEvent {
   id: string;
   title: string;
   link: string;
+  location: string;
   eventDate: string;
   addedBy: string;
   createdAt: string;

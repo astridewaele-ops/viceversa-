@@ -64,6 +64,7 @@ interface DbEvent {
   id: string;
   title: string;
   link: string | null;
+  location: string | null;
   event_date: string;
   added_by: string;
   created_at: string;
@@ -137,6 +138,7 @@ function mapEvent(e: DbEvent): CalendarEvent {
     id: e.id,
     title: e.title,
     link: e.link ?? "",
+    location: e.location ?? "",
     eventDate: e.event_date,
     addedBy: e.added_by,
     createdAt: e.created_at.slice(0, 10),
@@ -455,6 +457,7 @@ export async function insertBook(
 export interface EventInput {
   title: string;
   link: string;
+  location: string;
   eventDate: string;
 }
 
@@ -468,6 +471,7 @@ export async function insertEvent(
     .insert({
       title: e.title,
       link: e.link || null,
+      location: e.location || null,
       event_date: e.eventDate,
       added_by: addedBy,
     })

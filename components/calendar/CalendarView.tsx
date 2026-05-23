@@ -112,6 +112,7 @@ export function CalendarView({
           </div>
           <div className="cargo-mono mt-1.5" style={{ color: "#777" }}>
             {f.day} {f.month} {f.year}
+            {e.location && ` · ${e.location}`}
             {adder && ` · door ${adder.name}`}
           </div>
         </div>
@@ -146,22 +147,10 @@ export function CalendarView({
   return (
     <div className="animate-fadeIn">
       <section className="pt-20 pb-12">
-        <div className="cargo-mono mb-3" style={{ color: "#999" }}>
-          Index № 3 — Kalender · Agenda
-        </div>
-        <div className="flex items-end justify-between flex-wrap gap-4">
-          <h1
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "clamp(24px, 3vw, 36px)",
-              fontWeight: 300,
-              lineHeight: 1.05,
-              letterSpacing: "-0.02em",
-              maxWidth: 900,
-            }}
-          >
-            Events en subsidieoproepen
-          </h1>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="cargo-mono" style={{ color: "#999" }}>
+            Index № 3 — Agenda
+          </div>
           <button onClick={onAdd} className="cargo-btn-primary">
             + Event toevoegen
           </button>

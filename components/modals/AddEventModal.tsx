@@ -7,6 +7,7 @@ import { Field } from "@/components/ui/Field";
 export interface EventDraft {
   title: string;
   link: string;
+  location: string;
   eventDate: string;
 }
 
@@ -18,6 +19,7 @@ interface AddEventModalProps {
 export function AddEventModal({ onClose, onSubmit }: AddEventModalProps) {
   const [title, setTitle] = useState("");
   const [link, setLink] = useState("");
+  const [location, setLocation] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -37,6 +39,7 @@ export function AddEventModal({ onClose, onSubmit }: AddEventModalProps) {
       await onSubmit({
         title: title.trim(),
         link: link.trim(),
+        location: location.trim(),
         eventDate,
       });
       onClose();
@@ -62,6 +65,13 @@ export function AddEventModal({ onClose, onSubmit }: AddEventModalProps) {
           onChange={setEventDate}
           placeholder="jjjj-mm-dd"
           type="date"
+        />
+        <Field
+          label="Locatie (optioneel)"
+          value={location}
+          onChange={setLocation}
+          placeholder="bv. KVS Brussel"
+          type="text"
         />
         <Field
           label="Link (optioneel)"

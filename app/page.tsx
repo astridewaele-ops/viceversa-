@@ -452,7 +452,7 @@ export default function HomePage() {
                   color: navColor(view.page === "calendar"),
                 }}
               >
-                Kalender
+                Agenda
               </button>
             </nav>
           </div>
