@@ -17,6 +17,17 @@ interface BookViewProps {
   onBack: () => void;
   onAsk: () => void;
   onAnswer: (questionId: string, text: string) => void;
+  onEditQuestion: (questionId: string, text: string) => Promise<void> | void;
+  onDeleteQuestion: (questionId: string) => Promise<void> | void;
+  onEditAnswer: (
+    questionId: string,
+    answerId: string,
+    text: string
+  ) => Promise<void> | void;
+  onDeleteAnswer: (
+    questionId: string,
+    answerId: string
+  ) => Promise<void> | void;
   focusQuestionId?: string;
 }
 
@@ -24,9 +35,14 @@ export function BookView({
   book,
   questions,
   users,
+  currentUserId,
   onBack,
   onAsk,
   onAnswer,
+  onEditQuestion,
+  onDeleteQuestion,
+  onEditAnswer,
+  onDeleteAnswer,
   focusQuestionId,
 }: BookViewProps) {
   const [expandedQ, setExpandedQ] = useState<string | null>(
@@ -34,6 +50,10 @@ export function BookView({
   );
   const [answerText, setAnswerText] = useState<Record<string, string>>({});
   const [tagFilter, setTagFilter] = useState<string>("all");
+  const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
+  const [questionDraft, setQuestionDraft] = useState("");
+  const [editingAnswer, setEditingAnswer] = useState<string | null>(null);
+  const [answerDraft, setAnswerDraft] = useState("");
   const translator = users.find((u) => u.id === book.translator);
 
   const filteredQuestions =
@@ -215,22 +235,92 @@ export function BookView({
                               {q.passage}
                             </blockquote>
                           )}
-                          <p
-                            style={{
-                              fontFamily: "var(--font-serif)",
-                              fontSize: 16,
-                              lineHeight: 1.55,
-                              color: "#222",
-                              marginBottom: 32,
-                            }}
-                          >
-                            {q.text}
-                          </p>
+                          {editingQuestion === q.id ? (
+                            <div style={{ marginBottom: 32 }}>
+                              <textarea
+                                value={questionDraft}
+                                onChange={(e) => setQuestionDraft(e.target.value)}
+                                rows={4}
+                                className="cargo-input"
+                                style={{
+                                  fontFamily: "var(--font-serif)",
+                                  fontSize: 16,
+                                  lineHeight: 1.55,
+                                }}
+                              />
+                              <div className="flex gap-2 mt-3">
+                                <button
+                                  onClick={async () => {
+                                    const text = questionDraft.trim();
+                                    if (!text) return;
+                                    await onEditQuestion(q.id, text);
+                                    setEditingQuestion(null);
+                                  }}
+                                  disabled={!questionDraft.trim()}
+                                  className="cargo-btn-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                  Opslaan
+                                </button>
+                                <button
+                                  onClick={() => setEditingQuestion(null)}
+                                  className="cargo-btn"
+                                >
+                                  Annuleren
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <p
+                                style={{
+                                  fontFamily: "var(--font-serif)",
+                                  fontSize: 16,
+                                  lineHeight: 1.55,
+                                  color: "#222",
+                                  marginBottom: q.askerId === currentUserId ? 12 : 32,
+                                }}
+                              >
+                                {q.text}
+                              </p>
+                              {q.askerId === currentUserId && (
+                                <div
+                                  className="flex gap-4 mb-8 cargo-mono"
+                                  style={{ fontSize: 11, color: "#999" }}
+                                >
+                                  <button
+                                    onClick={() => {
+                                      setQuestionDraft(q.text);
+                                      setEditingQuestion(q.id);
+                                    }}
+                                    style={{ textDecoration: "underline" }}
+                                  >
+                                    Aanpassen
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (
+                                        window.confirm(
+                                          "Deze vraag verwijderen? Antwoorden eronder verdwijnen ook."
+                                        )
+                                      ) {
+                                        await onDeleteQuestion(q.id);
+                                      }
+                                    }}
+                                    style={{ textDecoration: "underline" }}
+                                  >
+                                    Verwijderen
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
 
                           {q.answers.length > 0 && (
                             <div className="space-y-7 mb-8">
                               {q.answers.map((a) => {
                                 const author = users.find((u) => u.id === a.authorId);
+                                const isOwn = a.authorId === currentUserId;
+                                const isEditing = editingAnswer === a.id;
                                 return (
                                   <div
                                     key={a.id}
@@ -244,16 +334,84 @@ export function BookView({
                                       <span style={{ color: "#111" }}>{author?.name}</span>{" "}
                                       · {a.createdAt}
                                     </div>
-                                    <p
-                                      style={{
-                                        fontFamily: "var(--font-serif)",
-                                        fontSize: 15,
-                                        lineHeight: 1.6,
-                                        color: "#222",
-                                      }}
-                                    >
-                                      {a.text}
-                                    </p>
+                                    {isEditing ? (
+                                      <div>
+                                        <textarea
+                                          value={answerDraft}
+                                          onChange={(e) => setAnswerDraft(e.target.value)}
+                                          rows={3}
+                                          className="cargo-input"
+                                          style={{
+                                            fontFamily: "var(--font-serif)",
+                                            fontSize: 15,
+                                            lineHeight: 1.6,
+                                          }}
+                                        />
+                                        <div className="flex gap-2 mt-3">
+                                          <button
+                                            onClick={async () => {
+                                              const text = answerDraft.trim();
+                                              if (!text) return;
+                                              await onEditAnswer(q.id, a.id, text);
+                                              setEditingAnswer(null);
+                                            }}
+                                            disabled={!answerDraft.trim()}
+                                            className="cargo-btn-primary disabled:opacity-30 disabled:cursor-not-allowed"
+                                          >
+                                            Opslaan
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingAnswer(null)}
+                                            className="cargo-btn"
+                                          >
+                                            Annuleren
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <p
+                                          style={{
+                                            fontFamily: "var(--font-serif)",
+                                            fontSize: 15,
+                                            lineHeight: 1.6,
+                                            color: "#222",
+                                          }}
+                                        >
+                                          {a.text}
+                                        </p>
+                                        {isOwn && (
+                                          <div
+                                            className="flex gap-4 mt-2 cargo-mono"
+                                            style={{ fontSize: 11, color: "#999" }}
+                                          >
+                                            <button
+                                              onClick={() => {
+                                                setAnswerDraft(a.text);
+                                                setEditingAnswer(a.id);
+                                              }}
+                                              style={{ textDecoration: "underline" }}
+                                            >
+                                              Aanpassen
+                                            </button>
+                                            <button
+                                              onClick={async () => {
+                                                if (
+                                                  window.confirm(
+                                                    "Dit antwoord verwijderen?"
+                                                  )
+                                                ) {
+                                                  await onDeleteAnswer(q.id, a.id);
+                                                }
+                                              }}
+                                              style={{ textDecoration: "underline" }}
+                                            >
+                                              Verwijderen
+                                            </button>
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
                                   </div>
                                 );
                               })}

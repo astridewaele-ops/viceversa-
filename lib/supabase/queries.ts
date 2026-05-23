@@ -282,6 +282,64 @@ export async function insertAnswer(
   };
 }
 
+export async function updateQuestionBody(
+  questionId: string,
+  text: string
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("questions")
+    .update({ body: text })
+    .eq("id", questionId);
+  if (error) {
+    console.error("update question", error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteQuestion(questionId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("questions")
+    .delete()
+    .eq("id", questionId);
+  if (error) {
+    console.error("delete question", error);
+    return false;
+  }
+  return true;
+}
+
+export async function updateAnswerBody(
+  answerId: string,
+  text: string
+): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("answers")
+    .update({ body: text })
+    .eq("id", answerId);
+  if (error) {
+    console.error("update answer", error);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteAnswer(answerId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("answers")
+    .delete()
+    .eq("id", answerId);
+  if (error) {
+    console.error("delete answer", error);
+    return false;
+  }
+  return true;
+}
+
 export interface BookInput {
   title: string;
   author: string;

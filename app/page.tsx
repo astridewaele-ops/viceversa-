@@ -1,17 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
 import { Inbox } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   createProfile,
+  deleteAnswer,
+  deleteQuestion,
   fetchAppState,
   insertAnswer,
   insertBook,
   insertQuestion,
   insertVademecum,
+  updateAnswerBody,
   updateEmailNotifications,
+  updateQuestionBody,
 } from "@/lib/supabase/queries";
 import type {
   AppState,
@@ -61,6 +66,7 @@ const EMPTY_STATE: AppState = {
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const [stage, setStage] = useState<Stage>("loading");
   const [authUser, setAuthUser] = useState<SupabaseAuthUser | null>(null);
   const [state, setState] = useState<AppState>(EMPTY_STATE);
@@ -86,16 +92,19 @@ export default function HomePage() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       setAuthUser(session?.user ?? null);
+      if (event === "PASSWORD_RECOVERY") {
+        router.push("/auth/update-password");
+      }
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [router]);
 
   // Data ophalen wanneer er een ingelogde gebruiker is.
   useEffect(() => {
@@ -204,6 +213,68 @@ export default function HomePage() {
     const newEntry = await insertVademecum(currentUser.id, entry);
     if (!newEntry) return;
     setState((s) => ({ ...s, vademecum: [newEntry, ...s.vademecum] }));
+  };
+
+  const handleEditQuestion = async (questionId: string, text: string) => {
+    if (!currentUser) return;
+    const ok = await updateQuestionBody(questionId, text);
+    if (!ok) return;
+    setState((s) => ({
+      ...s,
+      questions: s.questions.map((q) =>
+        q.id === questionId ? { ...q, text } : q
+      ),
+    }));
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!currentUser) return;
+    const ok = await deleteQuestion(questionId);
+    if (!ok) return;
+    setState((s) => ({
+      ...s,
+      questions: s.questions.filter((q) => q.id !== questionId),
+    }));
+    if (view.page === "book" && view.focusQuestion === questionId) {
+      setView({ page: "book", bookId: view.bookId });
+    }
+  };
+
+  const handleEditAnswer = async (
+    questionId: string,
+    answerId: string,
+    text: string
+  ) => {
+    if (!currentUser) return;
+    const ok = await updateAnswerBody(answerId, text);
+    if (!ok) return;
+    setState((s) => ({
+      ...s,
+      questions: s.questions.map((q) =>
+        q.id !== questionId
+          ? q
+          : {
+              ...q,
+              answers: q.answers.map((a) =>
+                a.id === answerId ? { ...a, text } : a
+              ),
+            }
+      ),
+    }));
+  };
+
+  const handleDeleteAnswer = async (questionId: string, answerId: string) => {
+    if (!currentUser) return;
+    const ok = await deleteAnswer(answerId);
+    if (!ok) return;
+    setState((s) => ({
+      ...s,
+      questions: s.questions.map((q) =>
+        q.id !== questionId
+          ? q
+          : { ...q, answers: q.answers.filter((a) => a.id !== answerId) }
+      ),
+    }));
   };
 
   const handleToggleNotifications = async () => {
@@ -507,6 +578,10 @@ export default function HomePage() {
             onBack={() => setView(view.origin || { page: "home" })}
             onAsk={() => setShowAskModal(true)}
             onAnswer={handleAddAnswer}
+            onEditQuestion={handleEditQuestion}
+            onDeleteQuestion={handleDeleteQuestion}
+            onEditAnswer={handleEditAnswer}
+            onDeleteAnswer={handleDeleteAnswer}
           />
         )}
 
