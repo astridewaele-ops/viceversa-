@@ -114,38 +114,17 @@ export function ArchiveView({
         ))}
       </section>
 
-      <section
-        className="pb-24 border-t pt-10"
-        style={{ borderColor: "rgba(0,0,0,0.14)" }}
-      >
-        <div className="flex items-baseline justify-between mb-4">
+      {myFolders.length > 0 && (
+        <section
+          className="pb-24 border-t pt-10"
+          style={{ borderColor: "rgba(0,0,0,0.14)" }}
+        >
           <h2
-            className="cargo-mono"
+            className="cargo-mono mb-4"
             style={{ color: "#999" }}
           >
             Eigen dossiers
           </h2>
-          <button
-            onClick={onNewFolder}
-            className="cargo-mono flex items-center gap-1.5 hover:text-black transition-colors"
-            style={{ color: "#666" }}
-          >
-            + Nieuw dossier
-          </button>
-        </div>
-        {myFolders.length === 0 ? (
-          <p
-            className="py-4"
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: 15,
-              fontStyle: "italic",
-              color: "#888",
-            }}
-          >
-            Nog geen eigen dossiers.
-          </p>
-        ) : (
           <div className="border-t" style={{ borderColor: "rgba(0,0,0,0.14)" }}>
             {myFolders.map((f, idx) => (
               <ArchiveRow
@@ -157,8 +136,8 @@ export function ArchiveView({
               />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }
