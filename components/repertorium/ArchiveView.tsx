@@ -45,7 +45,7 @@ export function ArchiveView({
             maxWidth: 900,
           }}
         >
-          Vertaalvragen per soort
+          Vragen per categorie
         </h1>
       </section>
 
@@ -84,10 +84,10 @@ export function ArchiveView({
               letterSpacing: "-0.01em",
             }}
           >
-            Eigen mappen
+            Eigen dossiers
           </h2>
           <button onClick={onNewFolder} className="cargo-btn-primary">
-            + Nieuwe map
+            + Nieuw dossier
           </button>
         </div>
         {myFolders.length === 0 ? (
@@ -99,7 +99,7 @@ export function ArchiveView({
               color: "#666",
             }}
           >
-            Nog geen eigen mappen. Maak er één aan om vragen te ordenen.
+            Nog geen eigen dossiers. Maak er één aan om vragen te ordenen.
           </p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-24">

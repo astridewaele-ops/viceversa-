@@ -518,7 +518,7 @@ export default function HomePage() {
                   maxWidth: 900,
                 }}
               >
-                Vertaalvragen per boek
+                Vragen per boek
               </h1>
             </section>
 

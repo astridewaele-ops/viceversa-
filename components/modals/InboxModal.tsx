@@ -27,19 +27,6 @@ export function InboxModal({
       onClose={onClose}
       wide
     >
-      <div className="mb-5 pb-5 border-b" style={{ borderColor: "#e8e8e3" }}>
-        <p
-          style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: 14,
-            lineHeight: 1.55,
-            color: "#444",
-          }}
-        >
-          Je ontvangt automatisch bericht bij elke nieuwe vraag over een boek waarvan het
-          origineel in jouw moedertaal is.
-        </p>
-      </div>
       {notifications.length === 0 ? (
         <p
           style={{
