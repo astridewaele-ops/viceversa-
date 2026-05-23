@@ -1,11 +1,13 @@
-import type { CoverPattern, Folder } from "@/lib/types";
+import type { CoverPattern } from "@/lib/types";
 
 interface FolderCoverProps {
-  folder: Folder;
+  name: string;
+  seed: string;
   count: number;
   itemLabel: { singular: string; plural: string };
   w?: number;
   h?: number;
+  disabled?: boolean;
 }
 
 const FOLDER_PALETTE: Array<{
@@ -23,22 +25,24 @@ const FOLDER_PALETTE: Array<{
   { bg: "#ede4d3", accent: "#1a1a1a", pattern: "minimal" },
 ];
 
-function paletteFor(folderId: string) {
+function paletteFor(seed: string) {
   let h = 0;
-  for (let i = 0; i < folderId.length; i++) {
-    h = (h * 31 + folderId.charCodeAt(i)) | 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = (h * 31 + seed.charCodeAt(i)) | 0;
   }
   return FOLDER_PALETTE[Math.abs(h) % FOLDER_PALETTE.length];
 }
 
 export function FolderCover({
-  folder,
+  name,
+  seed,
   count,
   itemLabel,
   w = 280,
   h = 168,
+  disabled = false,
 }: FolderCoverProps) {
-  const { bg, accent, pattern } = paletteFor(folder.id);
+  const { bg, accent, pattern } = paletteFor(seed);
   return (
     <div
       style={{
@@ -48,6 +52,7 @@ export function FolderCover({
         color: accent,
         position: "relative",
         overflow: "hidden",
+        opacity: disabled ? 0.35 : 1,
       }}
     >
       {pattern === "horizontal" && (
@@ -140,7 +145,7 @@ export function FolderCover({
             letterSpacing: "-0.01em",
           }}
         >
-          {folder.name}
+          {name}
         </div>
         <div
           style={{

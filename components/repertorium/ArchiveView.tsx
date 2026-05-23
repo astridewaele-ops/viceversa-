@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
 import type { Folder, Question } from "@/lib/types";
 import { TAGS } from "@/lib/constants";
 import { FolderCover } from "@/components/folders/FolderCover";
@@ -51,47 +50,31 @@ export function ArchiveView({
       </section>
 
       <section
-        className="pb-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 border-t pt-16"
+        className="pb-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 border-t pt-16"
         style={{ borderColor: "#e8e8e3" }}
       >
-        {TAGS.map((t, idx) => (
-          <button
-            key={t.id}
-            onClick={() => onOpenCategory(t.id)}
-            className="vv-folder text-left animate-fadeIn group"
-            style={{ animationDelay: `${idx * 50}ms` }}
-            disabled={counts[t.id] === 0}
-          >
-            <div className="vv-folder-tab" />
-            <div className="vv-folder-body">
-              <div className="flex items-baseline justify-between">
-                <span
-                  style={{
-                    fontFamily: "var(--font-serif)",
-                    fontSize: 30,
-                    fontWeight: 300,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {t.label}
-                </span>
-                <span
-                  className="cargo-mono"
-                  style={{ color: counts[t.id] > 0 ? "#111" : "#bbb" }}
-                >
-                  {counts[t.id]} {counts[t.id] === 1 ? "vraag" : "vragen"}
-                </span>
+        {TAGS.map((t, idx) => {
+          const disabled = counts[t.id] === 0;
+          return (
+            <button
+              key={t.id}
+              onClick={() => onOpenCategory(t.id)}
+              className="text-left animate-fadeIn group disabled:cursor-not-allowed"
+              style={{ animationDelay: `${idx * 50}ms` }}
+              disabled={disabled}
+            >
+              <div className="transition-transform duration-300 group-enabled:group-hover:scale-[1.02]">
+                <FolderCover
+                  name={t.label}
+                  seed={`tag:${t.id}`}
+                  count={counts[t.id]}
+                  itemLabel={{ singular: "vraag", plural: "vragen" }}
+                  disabled={disabled}
+                />
               </div>
-              <div
-                className="cargo-mono mt-6 flex items-center gap-1.5"
-                style={{ color: counts[t.id] > 0 ? "#666" : "#ccc" }}
-              >
-                {counts[t.id] > 0 ? "Open map" : "Leeg"}{" "}
-                {counts[t.id] > 0 && <ArrowRight className="w-3 h-3" strokeWidth={1.5} />}
-              </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </section>
 
       <section className="pb-24 border-t pt-16" style={{ borderColor: "#e8e8e3" }}>
@@ -132,7 +115,8 @@ export function ArchiveView({
               >
                 <div className="transition-transform duration-300 group-hover:scale-[1.02]">
                   <FolderCover
-                    folder={f}
+                    name={f.name}
+                    seed={`folder:${f.id}`}
                     count={folderCounts[f.id]}
                     itemLabel={{ singular: "vraag", plural: "vragen" }}
                   />

@@ -1,6 +1,5 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
 import type { Folder, VademecumCategory, VademecumEntry } from "@/lib/types";
 import { VADEMECUM_CATEGORIES } from "@/lib/constants";
 import { FolderCover } from "@/components/folders/FolderCover";
@@ -51,42 +50,23 @@ export function VademecumView({
       </section>
 
       <section
-        className="pb-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12 border-t pt-16"
+        className="pb-24 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 border-t pt-16"
         style={{ borderColor: "#e8e8e3" }}
       >
         {VADEMECUM_CATEGORIES.map((c, idx) => (
           <button
             key={c.id}
             onClick={() => onOpenCategory(c.id)}
-            className="vv-folder text-left animate-fadeIn group"
+            className="text-left animate-fadeIn group"
             style={{ animationDelay: `${idx * 50}ms` }}
           >
-            <div className="vv-folder-tab" />
-            <div className="vv-folder-body">
-              <div className="flex items-baseline justify-between">
-                <span
-                  style={{
-                    fontFamily: "var(--font-serif)",
-                    fontSize: 30,
-                    fontWeight: 300,
-                    letterSpacing: "-0.01em",
-                  }}
-                >
-                  {c.label}
-                </span>
-                <span
-                  className="cargo-mono"
-                  style={{ color: counts[c.id] > 0 ? "#111" : "#bbb" }}
-                >
-                  {counts[c.id]} {counts[c.id] === 1 ? "item" : "items"}
-                </span>
-              </div>
-              <div
-                className="cargo-mono mt-6 flex items-center gap-1.5"
-                style={{ color: "#666" }}
-              >
-                Open map <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
-              </div>
+            <div className="transition-transform duration-300 group-hover:scale-[1.02]">
+              <FolderCover
+                name={c.label}
+                seed={`vcat:${c.id}`}
+                count={counts[c.id]}
+                itemLabel={{ singular: "item", plural: "items" }}
+              />
             </div>
           </button>
         ))}
@@ -130,7 +110,8 @@ export function VademecumView({
               >
                 <div className="transition-transform duration-300 group-hover:scale-[1.02]">
                   <FolderCover
-                    folder={f}
+                    name={f.name}
+                    seed={`folder:${f.id}`}
                     count={folderCounts[f.id]}
                     itemLabel={{ singular: "item", plural: "items" }}
                   />
