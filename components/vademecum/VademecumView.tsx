@@ -3,6 +3,7 @@
 import { ArrowRight } from "lucide-react";
 import type { Folder, VademecumCategory, VademecumEntry } from "@/lib/types";
 import { VADEMECUM_CATEGORIES } from "@/lib/constants";
+import { FolderCover } from "@/components/folders/FolderCover";
 
 interface VademecumViewProps {
   vademecum: VademecumEntry[];
@@ -119,37 +120,20 @@ export function VademecumView({
             Nog geen eigen mappen. Maak er één aan om items te ordenen.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-            {myFolders.map((f) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
+            {myFolders.map((f, idx) => (
               <button
                 key={f.id}
                 onClick={() => onOpenFolder(f.id)}
-                className="vv-folder text-left animate-fadeIn group"
+                className="text-left animate-fadeIn group"
+                style={{ animationDelay: `${idx * 40}ms` }}
               >
-                <div className="vv-folder-tab" />
-                <div className="vv-folder-body">
-                  <div className="flex items-baseline justify-between">
-                    <span
-                      style={{
-                        fontFamily: "var(--font-serif)",
-                        fontSize: 26,
-                        fontWeight: 300,
-                        letterSpacing: "-0.01em",
-                      }}
-                    >
-                      {f.name}
-                    </span>
-                    <span className="cargo-mono" style={{ color: "#111" }}>
-                      {folderCounts[f.id]}{" "}
-                      {folderCounts[f.id] === 1 ? "item" : "items"}
-                    </span>
-                  </div>
-                  <div
-                    className="cargo-mono mt-6 flex items-center gap-1.5"
-                    style={{ color: "#666" }}
-                  >
-                    Open map <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
-                  </div>
+                <div className="transition-transform duration-300 group-hover:scale-[1.02]">
+                  <FolderCover
+                    folder={f}
+                    count={folderCounts[f.id]}
+                    itemLabel={{ singular: "item", plural: "items" }}
+                  />
                 </div>
               </button>
             ))}
