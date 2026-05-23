@@ -83,7 +83,7 @@ export function ArchiveView({
     <div className="animate-fadeIn">
       <section className="pt-20 pb-12">
         <div className="cargo-mono mb-3" style={{ color: "#999" }}>
-          Index № 2 — Repertorium · Dossiers
+          Repertorium · Dossiers
         </div>
         <h1
           style={{

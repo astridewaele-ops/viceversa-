@@ -187,7 +187,7 @@ export function CalendarView({
       <section className="pt-20 pb-12">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="cargo-mono" style={{ color: "#999" }}>
-            Index № 3 — Agenda
+            Agenda · Events en subsidies
           </div>
           <button onClick={onAdd} className="cargo-btn-primary">
             + Event toevoegen

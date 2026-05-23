@@ -527,7 +527,7 @@ export default function HomePage() {
           <>
             <section className="pt-20 pb-16 animate-fadeIn">
               <div className="cargo-mono mb-3" style={{ color: "#999" }}>
-                Index № 1 — Bibliotheek · Boeken
+                Bibliotheek · Boeken
               </div>
               <h1
                 style={{
