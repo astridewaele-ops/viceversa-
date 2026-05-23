@@ -6,7 +6,6 @@ import type { Book, Question, User } from "@/lib/types";
 import { LANG_LABELS, TAGS } from "@/lib/constants";
 import { BookCover } from "./BookCover";
 import { CatalogueLabel } from "./CatalogueLabel";
-import { DlRow } from "@/components/ui/DlRow";
 import { FieldLabel } from "@/components/ui/FieldLabel";
 
 interface BookViewProps {
@@ -103,14 +102,7 @@ export function BookView({
             {book.author} · {book.year}
           </div>
 
-          <dl className="mt-12 grid grid-cols-2 gap-y-4 gap-x-8 max-w-md">
-            <DlRow label="Brontaal" value={LANG_LABELS[book.sourceLanguage]} />
-            <DlRow label="Doeltaal" value={LANG_LABELS[book.targetLanguage]} />
-            {translator && <DlRow label="Vertaler" value={translator.name} />}
-            <DlRow label="Vragen" value={`${questions.length}`} />
-          </dl>
-
-          <button onClick={onAsk} className="cargo-btn-primary mt-12">
+          <button onClick={onAsk} className="cargo-btn-primary mt-10">
             + Vraag stellen bij dit boek
           </button>
         </div>
@@ -458,6 +450,49 @@ export function BookView({
           </div>
         )}
       </div>
+
+      <footer
+        className="mt-16 pt-6 border-t"
+        style={{ borderColor: "#e8e8e3" }}
+      >
+        <dl
+          className="grid grid-cols-[auto_1fr] gap-x-4"
+          style={{ fontSize: 11, lineHeight: 1.7 }}
+        >
+          <dt
+            className="cargo-mono"
+            style={{ color: "#999", textTransform: "uppercase", letterSpacing: "0.08em" }}
+          >
+            Brontaal
+          </dt>
+          <dd style={{ color: "#555" }}>{LANG_LABELS[book.sourceLanguage]}</dd>
+          <dt
+            className="cargo-mono"
+            style={{ color: "#999", textTransform: "uppercase", letterSpacing: "0.08em" }}
+          >
+            Doeltaal
+          </dt>
+          <dd style={{ color: "#555" }}>{LANG_LABELS[book.targetLanguage]}</dd>
+          {translator && (
+            <>
+              <dt
+                className="cargo-mono"
+                style={{ color: "#999", textTransform: "uppercase", letterSpacing: "0.08em" }}
+              >
+                Vertaler
+              </dt>
+              <dd style={{ color: "#555" }}>{translator.name}</dd>
+            </>
+          )}
+          <dt
+            className="cargo-mono"
+            style={{ color: "#999", textTransform: "uppercase", letterSpacing: "0.08em" }}
+          >
+            Vragen
+          </dt>
+          <dd style={{ color: "#555" }}>{questions.length}</dd>
+        </dl>
+      </footer>
     </div>
   );
 }
