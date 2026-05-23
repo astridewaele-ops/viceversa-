@@ -2,7 +2,7 @@
 
 import type { Folder, VademecumCategory, VademecumEntry } from "@/lib/types";
 import { VADEMECUM_CATEGORIES, VERTICAL_RHYTHM } from "@/lib/constants";
-import { FolderCover } from "@/components/folders/FolderCover";
+import { ArchiveCardCover } from "@/components/folders/ArchiveCardCover";
 
 interface VademecumViewProps {
   vademecum: VademecumEntry[];
@@ -61,7 +61,7 @@ export function VademecumView({
                 style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
               >
                 <div className="transition-transform duration-300 group-hover:scale-105">
-                  <FolderCover
+                  <ArchiveCardCover
                     name={c.label}
                     seed={`vcat:${c.id}`}
                     count={counts[c.id]}
@@ -113,7 +113,7 @@ export function VademecumView({
                   style={{ marginTop: offset, animationDelay: `${idx * 40}ms` }}
                 >
                   <div className="transition-transform duration-300 group-hover:scale-105">
-                    <FolderCover
+                    <ArchiveCardCover
                       name={f.name}
                       seed={`folder:${f.id}`}
                       count={folderCounts[f.id]}
