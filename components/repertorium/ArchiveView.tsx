@@ -99,7 +99,7 @@ export function ArchiveView({
               color: "#666",
             }}
           >
-            Nog geen eigen dossiers. Maak er één aan om vragen te ordenen.
+            Nog geen eigen dossiers.
           </p>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-x-6 gap-y-24">
