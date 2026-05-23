@@ -94,14 +94,26 @@ export default function HomePage() {
 
     supabase.auth.getUser().then(({ data }) => {
       if (!mounted) return;
-      setAuthUser(data.user ?? null);
+      setAuthUser((prev) => {
+        const next = data.user ?? null;
+        if (prev?.id === next?.id) return prev;
+        return next;
+      });
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
-      setAuthUser(session?.user ?? null);
+      // Vermijd onnodige rerender wanneer Supabase een TOKEN_REFRESHED of
+      // SIGNED_IN met dezelfde user terugstuurt (bv. bij tab-focus). Een
+      // nieuwe objectreferentie zou anders de data-fetch en de "Laden…"-
+      // staat triggeren, wat alle modale form-state wist.
+      setAuthUser((prev) => {
+        const next = session?.user ?? null;
+        if (prev?.id === next?.id) return prev;
+        return next;
+      });
       if (event === "PASSWORD_RECOVERY") {
         router.push("/auth/update-password");
       }
