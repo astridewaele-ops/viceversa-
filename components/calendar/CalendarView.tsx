@@ -2,6 +2,8 @@
 
 import { ArrowRight, X } from "lucide-react";
 import type { CalendarEvent, User } from "@/lib/types";
+import { colorForSeed } from "@/lib/categoryColors";
+import { Highlight } from "@/components/ui/Highlight";
 
 interface CalendarViewProps {
   events: CalendarEvent[];
@@ -113,12 +115,14 @@ export function CalendarView({
           <div
             style={{
               fontFamily: "var(--font-serif)",
-              fontSize: 19,
-              lineHeight: 1.25,
+              fontSize: 20,
+              lineHeight: 1.3,
               letterSpacing: "-0.01em",
             }}
           >
-            {e.title}
+            <Highlight color={colorForSeed(`event:${e.id}`)}>
+              {e.title}
+            </Highlight>
           </div>
           <div className="cargo-mono mt-1.5" style={{ color: "#777" }}>
             {e.location || "—"}

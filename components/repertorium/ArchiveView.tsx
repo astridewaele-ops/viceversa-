@@ -2,6 +2,8 @@
 
 import type { Folder, Question } from "@/lib/types";
 import { TAGS } from "@/lib/constants";
+import { categoryColors, colorForSeed } from "@/lib/categoryColors";
+import { Highlight } from "@/components/ui/Highlight";
 
 interface ArchiveViewProps {
   questions: Question[];
@@ -15,10 +17,11 @@ interface RowProps {
   index: number;
   name: string;
   count: number;
+  color: string;
   onClick: () => void;
 }
 
-function ArchiveRow({ index, name, count, onClick }: RowProps) {
+function ArchiveRow({ index, name, count, color, onClick }: RowProps) {
   return (
     <button
       onClick={onClick}
@@ -34,14 +37,14 @@ function ArchiveRow({ index, name, count, onClick }: RowProps) {
       <span
         style={{
           fontFamily: "var(--font-serif)",
-          fontSize: 19,
+          fontSize: 20,
           color: "#222",
           letterSpacing: "-0.01em",
           lineHeight: 1.2,
         }}
         className="group-hover:text-black transition-colors"
       >
-        {name}
+        <Highlight color={color}>{name}</Highlight>
       </span>
       <span style={{ flex: 1 }} />
       <span
@@ -101,6 +104,7 @@ export function ArchiveView({
             index={idx + 1}
             name={t.label}
             count={counts[t.id]}
+            color={categoryColors[t.id] ?? colorForSeed(`tag:${t.id}`)}
             onClick={() => onOpenCategory(t.id)}
           />
         ))}
@@ -124,6 +128,7 @@ export function ArchiveView({
                 index={TAGS.length + idx + 1}
                 name={f.name}
                 count={folderCounts[f.id]}
+                color={colorForSeed(`folder:${f.id}`)}
                 onClick={() => onOpenFolder(f.id)}
               />
             ))}
