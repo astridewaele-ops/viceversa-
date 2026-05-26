@@ -12,6 +12,7 @@ interface InboxModalProps {
   state: AppState;
   onClose: () => void;
   onOpenQuestion: (bookId: string) => void;
+  onMarkRead: (questionId: string) => void;
 }
 
 export function InboxModal({
@@ -20,6 +21,7 @@ export function InboxModal({
   state,
   onClose,
   onOpenQuestion,
+  onMarkRead,
 }: InboxModalProps) {
   return (
     <Modal
@@ -49,7 +51,10 @@ export function InboxModal({
             return (
               <button
                 key={n.id}
-                onClick={() => onOpenQuestion(book.id)}
+                onClick={() => {
+                  onMarkRead(n.questionId);
+                  onOpenQuestion(book.id);
+                }}
                 className="vv-row w-full text-left flex items-start gap-4 py-4 border-t px-2 -mx-2"
                 style={{ borderColor: "#e8e8e3" }}
               >

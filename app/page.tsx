@@ -12,11 +12,13 @@ import {
   deleteFolder,
   deleteQuestion,
   fetchAppState,
+  fetchReadNotifications,
   insertAnswer,
   insertBook,
   insertEvent,
   insertFolder,
   insertQuestion,
+  markNotificationRead,
   setAttendance,
   updateAnswerBody,
   updateEmailNotifications,
@@ -86,6 +88,7 @@ export default function HomePage() {
   const [createFolderSection, setCreateFolderSection] =
     useState<FolderSection | null>(null);
   const [addToFolderId, setAddToFolderId] = useState<string | null>(null);
+  const [readQuestionIds, setReadQuestionIds] = useState<Set<string>>(new Set());
 
   // Auth-subscription: één keer opzetten bij mount.
   useEffect(() => {
@@ -152,12 +155,21 @@ export default function HomePage() {
     return { ...profile, email: authUser.email ?? "" };
   }, [authUser, state.users]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+    fetchReadNotifications(currentUser.id).then((ids) =>
+      setReadQuestionIds(new Set(ids))
+    );
+  }, [currentUser?.id]);
+
   const notifications = useMemo(
     () =>
       currentUser
-        ? makeNotifications(state).filter((n) => n.userId === currentUser.id)
+        ? makeNotifications(state).filter(
+            (n) => n.userId === currentUser.id && !readQuestionIds.has(n.questionId)
+          )
         : [],
-    [state, currentUser]
+    [state, currentUser, readQuestionIds]
   );
   const openByHelpers = useMemo(
     () => (currentUser ? getOpenQuestionsByHelpers(state, currentUser.id) : []),
@@ -189,13 +201,20 @@ export default function HomePage() {
     setState((s) => ({ ...s, questions: [newQ, ...s.questions] }));
     const book = state.books.find((b) => b.id === draft.bookId);
     if (!book) return;
+    const audience = draft.targetAudience ?? ["NL", "FR"];
     const targets = state.users.filter(
       (u) =>
-        u.nativeLanguage === book.sourceLanguage &&
+        audience.includes(u.nativeLanguage) &&
         u.id !== currentUser.id &&
         u.emailNotifications
     );
     setShowEmailPreview({ question: newQ, book, targets });
+  };
+
+  const handleMarkNotificationRead = async (questionId: string) => {
+    if (!currentUser) return;
+    await markNotificationRead(currentUser.id, questionId);
+    setReadQuestionIds((prev) => new Set([...prev, questionId]));
   };
 
   const handleAddAnswer = async (questionId: string, text: string) => {
@@ -811,6 +830,7 @@ export default function HomePage() {
             setShowInbox(false);
             setView({ page: "book", bookId });
           }}
+          onMarkRead={handleMarkNotificationRead}
         />
       )}
       {showEmailPreview && (

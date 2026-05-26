@@ -192,8 +192,13 @@ export function BookView({
                       <div className="cargo-mono mt-2" style={{ color: "#777" }}>
                         {asker?.name} · {q.createdAt}
                         {q.page && ` · p. ${q.page}`}
-                        {q.tags && q.tags.length > 0 && ` · ${q.tags.join(", ")}`} ·{" "}
-                        {q.answers.length}{" "}
+                        {q.tags && q.tags.length > 0 && ` · ${q.tags.join(", ")}`}
+                        {q.targetAudience && q.targetAudience.length < 2 && (
+                          <span style={{ color: "#aaa" }}>
+                            {" "}· voor {q.targetAudience.map((l) => LANG_LABELS[l]).join(" & ")}
+                          </span>
+                        )}{" "}
+                        · {q.answers.length}{" "}
                         {q.answers.length === 1 ? "antwoord" : "antwoorden"}
                       </div>
                     </div>

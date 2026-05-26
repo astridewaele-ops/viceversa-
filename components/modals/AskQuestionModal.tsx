@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { AppState, Book } from "@/lib/types";
+import type { AppState, Book, Language } from "@/lib/types";
 import { LANG_LABELS, TAGS } from "@/lib/constants";
 import { Modal } from "./Modal";
 import { Field } from "@/components/ui/Field";
@@ -13,6 +13,7 @@ export interface QuestionDraft {
   page: string;
   text: string;
   tags: string[];
+  targetAudience: Language[];
 }
 
 interface AskQuestionModalProps {
@@ -28,11 +29,16 @@ export function AskQuestionModal({ book, state, onClose, onSubmit }: AskQuestion
   const [page, setPage] = useState("");
   const [text, setText] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [targetAudience, setTargetAudience] = useState<Language[]>(["NL", "FR"]);
 
   const toggleTag = (id: string) =>
     setSelectedTags((t) => (t.includes(id) ? t.filter((x) => x !== id) : [...t, id]));
+  const toggleAudience = (lang: Language) =>
+    setTargetAudience((prev) =>
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
+    );
   const nativeSpeakers = state.users.filter(
-    (u) => u.nativeLanguage === book.sourceLanguage && u.emailNotifications
+    (u) => targetAudience.includes(u.nativeLanguage) && u.emailNotifications
   );
 
   return (
@@ -118,6 +124,35 @@ export function AskQuestionModal({ book, state, onClose, onSubmit }: AskQuestion
           </div>
         </div>
 
+        <div>
+          <FieldLabel>Voor wie is deze vraag bedoeld?</FieldLabel>
+          <div className="flex flex-wrap gap-5 mt-2">
+            {(["NL", "FR"] as Language[]).map((lang) => (
+              <label
+                key={lang}
+                className="flex items-center gap-2 cursor-pointer cargo-mono"
+                style={{ fontSize: 13, color: "#444" }}
+              >
+                <input
+                  type="checkbox"
+                  checked={targetAudience.includes(lang)}
+                  onChange={() => toggleAudience(lang)}
+                  style={{ accentColor: "#111" }}
+                />
+                Moedertaalsprekers {LANG_LABELS[lang]}
+              </label>
+            ))}
+          </div>
+          {targetAudience.length === 0 && (
+            <p
+              className="cargo-mono mt-1"
+              style={{ color: "#c0392b", fontSize: 11 }}
+            >
+              Kies minstens één doelgroep.
+            </p>
+          )}
+        </div>
+
         {nativeSpeakers.length > 0 && (
           <div
             className="p-4 border"
@@ -134,11 +169,7 @@ export function AskQuestionModal({ book, state, onClose, onSubmit }: AskQuestion
                 color: "#444",
               }}
             >
-              {nativeSpeakers.length} {nativeSpeakers.length === 1 ? "lid" : "leden"} met{" "}
-              <strong style={{ color: "#111" }}>
-                {LANG_LABELS[book.sourceLanguage]}
-              </strong>{" "}
-              als moedertaal ontvangt automatisch een e-mail:
+              {nativeSpeakers.length} {nativeSpeakers.length === 1 ? "lid" : "leden"} uit de gekozen doelgroep ontvangt automatisch een e-mail:
               <div className="cargo-mono mt-2" style={{ color: "#555", fontSize: 10 }}>
                 {nativeSpeakers.map((u) => u.name).join(" · ")}
               </div>
@@ -148,17 +179,18 @@ export function AskQuestionModal({ book, state, onClose, onSubmit }: AskQuestion
 
         <button
           onClick={() => {
-            if (title.trim() && text.trim()) {
+            if (title.trim() && text.trim() && targetAudience.length > 0) {
               onSubmit({
                 title: title.trim(),
                 passage: passage.trim(),
                 page: page.trim(),
                 text: text.trim(),
                 tags: selectedTags,
+                targetAudience,
               });
             }
           }}
-          disabled={!title.trim() || !text.trim()}
+          disabled={!title.trim() || !text.trim() || targetAudience.length === 0}
           className="cargo-btn-primary w-full disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Vraag plaatsen →

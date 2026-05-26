@@ -37,6 +37,7 @@ create table public.questions (
   page text default '',
   body text not null,
   tags text[] not null default '{}'::text[],
+  target_audience text[] not null default '{NL,FR}'::text[],
   created_at timestamptz not null default now()
 );
 
@@ -46,6 +47,13 @@ create table public.answers (
   author_id uuid not null references public.profiles(id) on delete cascade,
   body text not null,
   created_at timestamptz not null default now()
+);
+
+create table public.notification_reads (
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  question_id uuid not null references public.questions(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, question_id)
 );
 
 create table public.vademecum (
@@ -65,6 +73,7 @@ alter table public.profiles  enable row level security;
 alter table public.books     enable row level security;
 alter table public.questions enable row level security;
 alter table public.answers   enable row level security;
+alter table public.notification_reads enable row level security;
 alter table public.vademecum enable row level security;
 
 -- Leden mogen alles lezen
@@ -73,6 +82,8 @@ create policy "Members read books"     on public.books     for select using (aut
 create policy "Members read questions" on public.questions for select using (auth.role() = 'authenticated');
 create policy "Members read answers"   on public.answers   for select using (auth.role() = 'authenticated');
 create policy "Members read vademecum" on public.vademecum for select using (auth.role() = 'authenticated');
+create policy "Read own reads"   on public.notification_reads for select using (auth.uid() = user_id);
+create policy "Insert own reads" on public.notification_reads for insert with check (auth.uid() = user_id);
 
 -- Eigen profiel aanmaken/aanpassen
 create policy "Insert own profile" on public.profiles for insert with check (auth.uid() = id);

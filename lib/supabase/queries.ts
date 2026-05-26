@@ -55,9 +55,15 @@ interface DbQuestion {
   page: string | null;
   body: string;
   tags: string[];
+  target_audience?: string[];
   created_at: string;
   folder_id: string | null;
   answers?: DbAnswer[];
+}
+
+interface DbNotificationRead {
+  user_id: string;
+  question_id: string;
 }
 
 interface DbEvent {
@@ -127,6 +133,7 @@ function mapQuestion(q: DbQuestion): Question {
     page: q.page ?? "",
     text: q.body,
     tags: q.tags,
+    targetAudience: (q.target_audience as Language[] | undefined) ?? ["NL", "FR"],
     createdAt: q.created_at.slice(0, 10),
     folderId: q.folder_id ?? null,
     answers: (q.answers ?? []).map((a) => ({
@@ -271,6 +278,7 @@ export interface QuestionInput {
   page: string;
   text: string;
   tags: string[];
+  targetAudience: Language[];
 }
 
 export async function insertQuestion(
@@ -288,6 +296,7 @@ export async function insertQuestion(
       page: q.page,
       body: q.text,
       tags: q.tags,
+      target_audience: q.targetAudience,
     })
     .select("*, answers(*)")
     .single();
@@ -507,6 +516,25 @@ export async function deleteEvent(eventId: string): Promise<boolean> {
     return false;
   }
   return true;
+}
+
+export async function fetchReadNotifications(userId: string): Promise<string[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("notification_reads")
+    .select("question_id")
+    .eq("user_id", userId);
+  return ((data as DbNotificationRead[] | null) ?? []).map((r) => r.question_id);
+}
+
+export async function markNotificationRead(
+  userId: string,
+  questionId: string
+): Promise<void> {
+  const supabase = createClient();
+  await supabase
+    .from("notification_reads")
+    .upsert({ user_id: userId, question_id: questionId });
 }
 
 export async function setAttendance(

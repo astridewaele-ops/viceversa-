@@ -58,6 +58,7 @@ export interface Question {
   createdAt: string;
   answers: Answer[];
   folderId?: string | null;
+  targetAudience?: Language[];
 }
 
 export interface CalendarEvent {

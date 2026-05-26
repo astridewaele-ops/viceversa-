@@ -5,10 +5,11 @@ export function makeNotifications(state: AppState): Notification[] {
   state.questions.forEach((q) => {
     const book = state.books.find((b) => b.id === q.bookId);
     if (!book) return;
+    const audience = q.targetAudience ?? ["NL", "FR"];
     state.users.forEach((u) => {
       if (u.id === q.askerId) return;
       if (!u.emailNotifications) return;
-      if (u.nativeLanguage === book.sourceLanguage) {
+      if (audience.includes(u.nativeLanguage)) {
         notifications.push({
           id: `n-${q.id}-${u.id}`,
           userId: u.id,

@@ -21,6 +21,7 @@ interface QuestionRecord {
   asker_id: string;
   title: string;
   tags: string[];
+  target_audience?: string[];
 }
 
 interface WebhookPayload {
@@ -99,11 +100,12 @@ Deno.serve(async (req) => {
     .eq("id", question.asker_id)
     .single<ProfileRow>();
 
-  // 3) Doelgroep — moedertaal == brontaal, opt-in, niet de vragensteller zelf
+  // 3) Doelgroep — gebaseerd op target_audience, opt-in, niet de vragensteller zelf
+  const audience = question.target_audience ?? ["NL", "FR"];
   const { data: recipients, error: recipientsError } = await supabase
     .from("profiles")
     .select("id, name")
-    .eq("native_language", book.source_language)
+    .in("native_language", audience)
     .eq("email_notifications", true)
     .neq("id", question.asker_id);
   if (recipientsError) {
